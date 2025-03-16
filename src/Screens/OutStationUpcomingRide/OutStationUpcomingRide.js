@@ -5,7 +5,7 @@ import {
   Image,
   Animated,
   TouchableOpacity,
-  StyleSheet,
+  OutStationUpcomingRideStyleheet,
 } from 'react-native';
 import React from 'react';
 import {useState} from 'react';
@@ -20,10 +20,13 @@ import {
 } from 'react-native-responsive-dimensions';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Svg, {Line} from 'react-native-svg';
+import {useNavigation} from '@react-navigation/native';
+import OutStationUpcomingRideStyle from './OutStationUpcomingRideStyle';
 
 const OutStationUpcomingRide = () => {
   const [selected, setSelected] = useState('Completed');
   const translateX = new Animated.Value(selected === 'Completed' ? 0 : 1);
+  const navigation = useNavigation();
 
   const toggleSwitch = value => {
     setSelected(value);
@@ -34,62 +37,28 @@ const OutStationUpcomingRide = () => {
     }).start();
   };
   return (
-    <View style={{flex: 1}}>
+    <View style={OutStationUpcomingRideStyle.MainContainerView}>
       <View>
         <StatusBar
           barStyle="dark-content"
           backgroundColor="#fff"
           animated={true}
         />
-        <View
-          style={{
-            height: 80,
-            width: '100%',
-            backgroundColor: '#0C3384',
-            flexDirection: 'row',
-          }}>
-          <View
-            style={{
-              justifyContent: 'center',
-              paddingLeft: responsiveScreenWidth(4),
-              paddingTop: responsiveScreenHeight(1),
-            }}>
-            <Image
-              source={Left}
-              resizeMode="contain"
-              style={{
-                height: responsiveScreenHeight(6),
-                width: responsiveScreenWidth(12),
-              }}
-            />
+        <View style={OutStationUpcomingRideStyle.header}>
+          <View style={OutStationUpcomingRideStyle.LeftView}>
+            <Image source={Left} resizeMode="contain" style={OutStationUpcomingRideStyle.LeftImg} />
           </View>
-          <View
-            style={{
-              justifyContent: 'center',
-              paddingLeft: responsiveScreenWidth(4),
-              paddingTop: responsiveScreenHeight(1),
-            }}>
-            <Text
-              style={{
-                fontWeight: '700',
-                fontSize: responsiveScreenFontSize(3),
-                lineHeight: 40,
-                color: '#FFF',
-              }}>
+          <View style={OutStationUpcomingRideStyle.OutStationUpcomingRideTextView}>
+            <Text style={OutStationUpcomingRideStyle.OutStationUpcomingRideText}>
               OutStation Upcoming Rides
             </Text>
           </View>
         </View>
-        <View
-          style={{
-            paddingTop: responsiveScreenHeight(2),
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}>
-          <View style={styles.switchContainer}>
+        <View style={OutStationUpcomingRideStyle.ToggleArea}>
+          <View style={OutStationUpcomingRideStyle.switchContainer}>
             <Animated.View
               style={[
-                styles.slider,
+                OutStationUpcomingRideStyle.slider,
                 {
                   left: translateX.interpolate({
                     inputRange: [0, 1],
@@ -99,144 +68,74 @@ const OutStationUpcomingRide = () => {
               ]}
             />
             <TouchableOpacity
-              style={styles.option}
+              style={OutStationUpcomingRideStyle.option}
               onPress={() => toggleSwitch('Upcoming')}>
               <Text
                 style={[
-                  styles.text,
-                  selected === 'Upcoming' && styles.selectedText,
+                  OutStationUpcomingRideStyle.text,
+                  selected === 'Upcoming' && OutStationUpcomingRideStyle.selectedText,
                 ]}>
                 Upcoming
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.option}
+              style={OutStationUpcomingRideStyle.option}
               onPress={() => toggleSwitch('Cancelled')}>
               <Text
                 style={[
-                  styles.text,
-                  selected === 'Cancelled' && styles.selectedText,
+                  OutStationUpcomingRideStyle.text,
+                  selected === 'Cancelled' && OutStationUpcomingRideStyle.selectedText,
                 ]}>
                 Cancelled
               </Text>
             </TouchableOpacity>
           </View>
         </View>
-        <View
-          style={{
-            paddingTop: responsiveScreenHeight(4),
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}>
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: '#000',
-              width: responsiveScreenWidth(90),
-              padding: responsiveScreenHeight(2),
-              borderRadius: responsiveScreenWidth(4),
-            }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                borderBottomWidth: 1,
-                borderBottomColor: 'grey',
-              }}>
-              <View style={{flexDirection: 'row'}}>
+        <View style={OutStationUpcomingRideStyle.RideInfoViewMain}>
+          <View style={OutStationUpcomingRideStyle.RideInfoView}>
+            <View style={OutStationUpcomingRideStyle.BottomBorder}>
+              <View style={OutStationUpcomingRideStyle.DateTimeRow}>
                 <View>
                   <Image
                     source={Calender}
-                    style={{
-                      height: responsiveScreenHeight(4),
-                      width: responsiveScreenWidth(10),
-                    }}
+                    style={OutStationUpcomingRideStyle.CalenderImg}
                     resizeMode="contain"
                   />
                 </View>
 
                 <View>
-                  <Text
-                    style={{
-                      fontWeight: '700',
-                      fontSize: responsiveScreenFontSize(2),
-                      lineHeight: 40,
-                      color: '#000',
-                    }}>
-                    20 Dec 2024
-                  </Text>
+                  <Text style={OutStationUpcomingRideStyle.CalenderDateText}>20 Dec 2024</Text>
                 </View>
-                <View
-                  style={{
-                    paddingLeft: responsiveScreenWidth(0.5),
-                    paddingRight: responsiveScreenWidth(0.5),
-                  }}>
-                  <Text
-                    style={{
-                      fontWeight: '700',
-                      fontSize: responsiveScreenFontSize(2),
-                      lineHeight: 40,
-                      color: '#000',
-                    }}>
-                    at
-                  </Text>
+                <View style={OutStationUpcomingRideStyle.CalenderAtTextView}>
+                  <Text style={OutStationUpcomingRideStyle.CalenderAtText}>at</Text>
                 </View>
                 <View>
-                  <Text
-                    style={{
-                      fontWeight: '700',
-                      fontSize: responsiveScreenFontSize(2),
-                      lineHeight: 40,
-                      color: '#000',
-                    }}>
-                    01:59pm
-                  </Text>
+                  <Text style={OutStationUpcomingRideStyle.CalenderTimeText}>01:59pm</Text>
                 </View>
               </View>
               <View>
                 <View>
-                  <Text
-                    style={{
-                      fontWeight: '700',
-                      fontSize: responsiveScreenFontSize(2),
-                      lineHeight: 40,
-                      color: '#000',
-                    }}>
-                    Ride Id #433
-                  </Text>
+                  <Text style={OutStationUpcomingRideStyle.RideId}>Ride Id #433</Text>
                 </View>
               </View>
             </View>
-            <View style={{paddingTop: responsiveScreenHeight(3)}}>
-              <View style={styles.step}>
+            <View style={OutStationUpcomingRideStyle.CompassView}>
+              <View style={OutStationUpcomingRideStyle.step}>
                 <Image
                   source={Compass}
-                  style={{
-                    height: responsiveScreenHeight(4),
-                    width: responsiveScreenWidth(7),
-                  }}
+                  style={OutStationUpcomingRideStyle.CompassText}
                   resizeMode="contain"
                 />
-                <Text style={styles.textSteps}>
+                <Text style={OutStationUpcomingRideStyle.textSteps}>
                   Tiruppur, Tamil Nadu, India
                 </Text>
               </View>
-              <View style={{paddingLeft: responsiveScreenWidth(3)}}>
-                <View
-                  style={{
-                    width: responsiveScreenWidth(1),
-                    height: responsiveScreenHeight(4),
-                    borderStyle: 'dashed',
-                    borderWidth: 1,
-                    borderColor: '#0C3384',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}></View>
+              <View style={OutStationUpcomingRideStyle.lineView}>
+                <View style={OutStationUpcomingRideStyle.line}></View>
               </View>
 
               {/* End Location */}
-              <View style={styles.step}>
+              <View style={OutStationUpcomingRideStyle.step}>
                 <Image
                   source={Destination}
                   style={{
@@ -245,33 +144,14 @@ const OutStationUpcomingRide = () => {
                   }}
                   resizeMode="contain"
                 />
-                <Text style={styles.textSteps}>Salem, Tamil Nadu, India</Text>
+                <Text style={OutStationUpcomingRideStyle.textSteps}>Salem, Tamil Nadu, India</Text>
               </View>
             </View>
-            <View
-              style={{
-                justifyContent: 'center',
-                alignItems: 'center',
-                paddingTop: responsiveScreenHeight(6),
-              }}>
+            <View style={OutStationUpcomingRideStyle.StartBtnView}>
               <TouchableOpacity
-                style={{
-                  width: responsiveScreenWidth(60),
-                  padding: responsiveScreenHeight(2),
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  backgroundColor: '#0C3384',
-                  borderRadius: responsiveScreenWidth(8),
-                }}>
-                <Text
-                  style={{
-                    fontWeight: '700',
-                    fontSize: responsiveScreenFontSize(2),
-                    lineHeight: 36.14,
-                    color: '#fff',
-                  }}>
-                  Start
-                </Text>
+                onPress={() => navigation.navigate('Home', {openModal: true})}
+                style={OutStationUpcomingRideStyle.StartBtn}>
+                <Text style={OutStationUpcomingRideStyle.StartBtnText}>Start</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -280,57 +160,5 @@ const OutStationUpcomingRide = () => {
     </View>
   );
 };
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    marginTop: 50,
-  },
-  switchContainer: {
-    width: 400,
-    height: 50,
-    backgroundColor: '#fff',
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    flexDirection: 'row',
-    position: 'relative',
-  },
-  slider: {
-    position: 'absolute',
-    width: '50%',
-    height: '100%',
-    backgroundColor: '#0A2C7D',
-    borderRadius: 25,
-  },
-  option: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  text: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  selectedText: {
-    color: '#fff',
-  },
-  step: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  textSteps: {
-    fontSize: 14,
-    color: '#333',
-  },
-  line: {
-    marginLeft: 9, // Align with icons
-  },
-  dash: {
-    width: responsiveScreenWidth(1), // Vertical Line
-    height: 100, // Adjust height
-    flexDirection: 'column', // For vertical alignment
-  },
-});
+
 export default OutStationUpcomingRide;

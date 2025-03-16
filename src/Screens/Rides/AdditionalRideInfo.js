@@ -5,7 +5,7 @@ import {
   Image,
   Animated,
   TouchableOpacity,
-  StyleSheet,
+  AdditionalRideInfoStyleheet,
 } from 'react-native';
 import React from 'react';
 import {useState} from 'react';
@@ -17,6 +17,7 @@ import {
   responsiveScreenFontSize,
 } from 'react-native-responsive-dimensions';
 import {Dropdown} from 'react-native-element-dropdown';
+import AdditionalRideInfoStyle from "./AdditionalRideInfoStyle"
 
 const AdditionalRideInfo = () => {
   const [text, setText] = useState('');
@@ -30,66 +31,30 @@ const AdditionalRideInfo = () => {
   ];
 
   return (
-    <View style={{flex: 1}}>
+    <View style={AdditionalRideInfoStyle.container}>
       <View>
         <StatusBar
           barStyle="dark-content"
           backgroundColor="#fff"
           animated={true}
         />
-        <View
-          style={{
-            height: 80,
-            width: '100%',
-            backgroundColor: '#0C3384',
-            flexDirection: 'row',
-          }}>
-          <View
-            style={{
-              justifyContent: 'center',
-              paddingLeft: responsiveScreenWidth(4),
-              paddingTop: responsiveScreenHeight(1),
-            }}>
-            <Image
-              source={Left}
-              resizeMode="contain"
-              style={{
-                height: responsiveScreenHeight(6),
-                width: responsiveScreenWidth(12),
-              }}
-            />
-          </View>
-          <View
-            style={{
-              justifyContent: 'center',
-              paddingLeft: responsiveScreenWidth(4),
-              paddingTop: responsiveScreenHeight(1),
-            }}>
-            <Text
-              style={{
-                fontWeight: '700',
-                fontSize: responsiveScreenFontSize(3),
-                lineHeight: 40,
-                color: '#FFF',
-              }}>
-              Additional Ride Info
-            </Text>
-          </View>
+        <View style={AdditionalRideInfoStyle.header}>
+          <TouchableOpacity
+            style={AdditionalRideInfoStyle.backButton}
+            onPress={() => navigation.goBack()}>
+            <Image source={Left} resizeMode="contain" style={AdditionalRideInfoStyle.backIcon} />
+          </TouchableOpacity>
+          <Text style={AdditionalRideInfoStyle.headerTitle}>Additional Ride Info</Text>
         </View>
 
-        <View
-          style={{
-            paddingTop: responsiveScreenHeight(4),
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}>
+        <View style={AdditionalRideInfoStyle.FormView}>
           <View>
             <TextInput
               label="End Kilometers"
               mode="outlined"
               value={text}
               onChangeText={text => setText(text)}
-              style={styles.input}
+              style={AdditionalRideInfoStyle.input}
               keyboardType="number-pad"
             />
           </View>
@@ -99,15 +64,15 @@ const AdditionalRideInfo = () => {
               mode="outlined"
               value={text}
               onChangeText={text => setText(text)}
-              style={styles.input}
+              style={AdditionalRideInfoStyle.input}
               keyboardType="number-pad"
             />
           </View>
           <View>
             <Dropdown
-              style={styles.dropdown}
-              placeholderStyle={styles.placeholderStyle}
-              selectedTextStyle={styles.selectedTextStyle}
+              style={AdditionalRideInfoStyle.dropdown}
+              placeholderStyle={AdditionalRideInfoStyle.placeholderStyle}
+              selectedTextStyle={AdditionalRideInfoStyle.selectedTextStyle}
               data={RideInfo}
               labelField="label"
               valueField="value"
@@ -118,8 +83,8 @@ const AdditionalRideInfo = () => {
             />
           </View>
           <View style={{paddingTop: responsiveScreenHeight(3)}}>
-            <TouchableOpacity style={[styles.button, {alignSelf: 'center'}]}>
-              <Text style={styles.buttonText}>Finish Ride</Text>
+            <TouchableOpacity style={[AdditionalRideInfoStyle.button]}>
+              <Text style={AdditionalRideInfoStyle.buttonText}>Finish Ride</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -127,97 +92,5 @@ const AdditionalRideInfo = () => {
     </View>
   );
 };
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    marginTop: 50,
-  },
-  switchContainer: {
-    width: 400,
-    height: 50,
-    backgroundColor: '#fff',
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    flexDirection: 'row',
-    position: 'relative',
-  },
-  slider: {
-    position: 'absolute',
-    width: '50%',
-    height: '100%',
-    backgroundColor: '#0A2C7D',
-    borderRadius: 25,
-  },
-  option: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  text: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0A2C7D',
-  },
-  selectedText: {
-    color: '#fff',
-  },
-  step: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  textSteps: {
-    fontSize: 14,
-    color: '#333',
-  },
-  line: {
-    marginLeft: 9, // Align with icons
-  },
-  dash: {
-    width: responsiveScreenWidth(1), // Vertical Line
-    height: 100, // Adjust height
-    flexDirection: 'column', // For vertical alignment
-  },
-  input: {
-    width: responsiveScreenWidth(90),
-    padding: responsiveScreenHeight(2),
-    // borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    marginBottom: 20,
-  },
-  dropdown: {
-    width: responsiveScreenWidth(60),
-    padding: responsiveScreenHeight(3),
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#000',
-    paddingHorizontal: 8,
-    backgroundColor: '#FFF',
-  },
-  placeholderStyle: {
-    fontSize: 16,
-    color: '#999',
-  },
-  selectedTextStyle: {
-    fontSize: 16,
-    color: '#333',
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    width: responsiveScreenWidth(90),
-    padding: responsiveScreenHeight(2),
 
-    borderRadius: 5,
-    marginTop: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-});
 export default AdditionalRideInfo;

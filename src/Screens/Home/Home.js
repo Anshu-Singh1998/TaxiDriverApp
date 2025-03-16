@@ -1,11 +1,10 @@
 import * as React from 'react';
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import {
   View,
   Text,
   Modal,
   TouchableOpacity,
-  StyleSheet,
   Animated,
   Image,
   StatusBar,
@@ -13,6 +12,8 @@ import {
   PermissionsAndroid,
   Platform,
   ScrollView,
+  Linking,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import {
   CodeField,
@@ -38,6 +39,10 @@ import Bell from '../../../Assets/Bell.png';
 import GetLocation from 'react-native-get-location';
 import Tick from '../../../Assets/Tick.png';
 import Cross from '../../../Assets/Cross.png';
+import {useRoute} from '@react-navigation/native';
+import HomeStyle from './HomeStyle';
+import {useDispatch, useSelector} from 'react-redux';
+import {changeDriverStatus} from '../../redux/Slices/OnlineSlice';
 
 const CELL_COUNT = 4; // Number of OTP boxes
 
@@ -51,6 +56,27 @@ const Home = ({navigation}) => {
   const [otpValue, setOtpValue] = useState('');
   const [text, setText] = useState('');
   const [location, setLocation] = useState(null);
+  const [tripStartModal, setTripStartModal] = useState(false);
+  const [arrivedLocationModal, setArrivedLocationModal] = useState(false);
+  const [arrivedUpdateModal, setArrivedUpdateModal] = useState(false);
+  const [isArrived, setIsArrived] = useState(false);
+  const [startRideModal, setStartRideModal] = useState(false);
+  const lastScrollY = useRef(0);
+  const route = useRoute();
+  const dispatch = useDispatch();
+  const {status, loading} = useSelector(state => state.status);
+  console.log('Current Driver Status:', status);
+
+  const handleScroll = event => {
+    const currentScrollY = event.nativeEvent.contentOffset.y;
+
+    if (currentScrollY < lastScrollY.current) {
+      // User scrolled up → open modal
+      setMapModalVisible(true);
+    }
+
+    lastScrollY.current = currentScrollY;
+  };
 
   const ref = useBlurOnFulfill({value: otpValue, cellCount: CELL_COUNT});
   const [props, getCellOnLayoutHandler] = useClearByFocusCell({
@@ -109,7 +135,6 @@ const Home = ({navigation}) => {
   ];
 
   const handleYes = () => {
-   
     setMapModalVisible(false);
   };
 
@@ -165,17 +190,61 @@ const Home = ({navigation}) => {
     getUserLocation();
   }, []);
 
+  useEffect(() => {
+    if (route.params?.openModal) {
+      console.log('Modal Response', route.params?.openModal);
+      setTripStartModal(true);
+    }
+  }, [route.params]);
+
+  const openMaps = () => {
+    const destinationLat = 28.7041; // Replace with actual latitude
+    const destinationLng = 77.1025; // Replace with actual longitude
+    const destinationName = 'Connaught Place, New Delhi'; // Replace with dynamic location name
+
+    let url = '';
+
+    if (Platform.OS === 'ios') {
+      // Apple Maps URL format
+      url = `http://maps.apple.com/?daddr=${destinationLat},${destinationLng}&dirflg=d&q=${encodeURIComponent(
+        destinationName,
+      )}`;
+    } else {
+      // Google Maps URL format with search query and navigation start
+      url = `google.navigation:q=${destinationLat},${destinationLng}&mode=d`;
+    }
+
+    // Open the Maps app
+    Linking.openURL(url).catch(err =>
+      console.error('Failed to open Maps', err),
+    );
+    setKMVisible(false);
+  };
+
+  const handleConfirmStatusChange = () => {
+    const newStatus = status === 'offline' ? 'online' : 'offline';
+    dispatch(changeDriverStatus(newStatus)).then(() => {
+      setOnlineModalVisible(false); // close modal after API call
+    });
+  };
+
   return (
-    <View style={styles.container}>
+    <View style={HomeStyle.container}>
       <StatusBar
         barStyle="light-content"
         backgroundColor="#0C3384"
         animated={true}
       />
+      <ScrollView
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        style={{flex: 1}}
+        contentContainerStyle={{height: 1500}} // Ensures enough scrollable space
+      />
       <MapView
         provider={PROVIDER_GOOGLE}
         customMapStyle={mapStyle}
-        style={styles.map}
+        style={HomeStyle.map}
         region={{
           latitude: 22.5958,
           longitude: 88.2636,
@@ -185,151 +254,53 @@ const Home = ({navigation}) => {
         onMapReady={() => console.log('Map is ready')}></MapView>
 
       <TouchableOpacity
-        style={styles.DrawerButton}
+        style={HomeStyle.DrawerButton}
         onPress={() => navigation.openDrawer()}>
         <Image
           source={DrawerImg}
-          style={{
-            height: responsiveScreenHeight(6),
-            width: responsiveScreenWidth(8),
-          }}
+          style={HomeStyle.DrawerImg}
           resizeMode="contain"
         />
       </TouchableOpacity>
       <TouchableOpacity
-        style={styles.OnlineButton}
+        style={HomeStyle.OnlineButton}
         onPress={() => setOnlineModalVisible(true)}>
-        <View style={{flexDirection: 'row'}}>
-          <View
-            style={{
-              width: responsiveScreenHeight(2),
-              height: responsiveScreenHeight(2),
-              borderRadius: responsiveScreenHeight(1),
-              backgroundColor: 'green',
-              alignItems: 'center',
-            }}></View>
+        <View style={HomeStyle.RowOnlineView}>
+          {status === 'online' ? (
+            <View style={HomeStyle.HomeOnlineBtn}></View>
+          ) : null}
           <Text
             style={[
-              styles.buttonText,
+              HomeStyle.buttonText,
               {paddingLeft: responsiveScreenWidth(2), color: '#000'},
             ]}>
-            You are Online now
+            {status === 'online' ? 'You are Online now' : 'You are Offline now'}
           </Text>
         </View>
       </TouchableOpacity>
       <TouchableOpacity
-        style={styles.NotificationButton}
+        style={HomeStyle.NotificationButton}
         onPress={() => navigation.navigate('Notification')}>
         <Image
           source={Bell}
-          style={{
-            height: responsiveScreenHeight(6),
-            width: responsiveScreenWidth(8),
-            tintColor: 'Blue',
-          }}
+          style={HomeStyle.BellNotificationImg}
           resizeMode="contain"
         />
       </TouchableOpacity>
-      {/* Button to Open OTP Modal */}
-      <TouchableOpacity
-        style={styles.OtpButton}
-        onPress={() => setModalVisible(true)}>
-        <Text style={styles.buttonText}>Enter OTP</Text>
+
+      <TouchableOpacity style={HomeStyle.MapButton} onPress={openModal}>
+        <Text style={HomeStyle.buttonText}>Map Modal</Text>
       </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.KMButton}
-        onPress={() => setKMVisible(true)}>
-        <Text style={styles.buttonText}>Enter KM</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.MapButton} onPress={openModal}>
-        <Text style={styles.buttonText}>Map Modal</Text>
-      </TouchableOpacity>
-
-      {/* OTP Modal */}
-      <Modal visible={modalVisible} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.title}>Enter OTP</Text>
-            <Text style={styles.subTitle}>
-              Enter the otp display in customers mobile to start the ride{' '}
-            </Text>
-
-            {/* OTP Input inside Modal */}
-            <CodeField
-              ref={ref}
-              {...props}
-              value={otpValue}
-              onChangeText={setOtpValue}
-              cellCount={CELL_COUNT}
-              rootStyle={styles.codeFieldRoot}
-              keyboardType="number-pad"
-              textContentType="oneTimeCode"
-              renderCell={({index, symbol, isFocused}) => (
-                <View
-                  key={index}
-                  style={[styles.cell, isFocused && styles.focusCell]}
-                  onLayout={getCellOnLayoutHandler(index)}>
-                  <Text style={styles.cellText}>{symbol || ' '}</Text>
-                </View>
-              )}
-            />
-
-            {/* Close Modal Button */}
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => setModalVisible(false)}>
-              <Text style={styles.buttonText}>Confirm</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* KiloMeter Modal */}
-      <Modal visible={kmVisible} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.title}>Enter Km</Text>
-            <TextInput
-              label="Starting Km"
-              mode="outlined"
-              value={text}
-              onChangeText={text => setText(text)}
-              style={styles.input}
-            />
-            <TouchableOpacity
-              style={[
-                styles.button,
-                {alignSelf: 'center', width: responsiveScreenWidth(70)},
-              ]}>
-              <Text style={styles.buttonText}>Verify</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
       {/* Online Modal */}
       <Modal visible={onlineModalVisible} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, {backgroundColor: '#0C3384'}]}>
+        <View style={HomeStyle.modalContainer}>
+          <View style={[HomeStyle.modalContent, {backgroundColor: '#0C3384'}]}>
             <View style={{alignSelf: 'center'}}>
-              <View
-                style={{
-                  height: responsiveScreenHeight(8),
-                  width: responsiveScreenHeight(8),
-                  borderRadius: responsiveScreenHeight(4),
-                  justifyContent: 'center',
-                  alignItems: 'center',
-
-                  backgroundColor: '#396ACFFC',
-                }}>
+              <View style={HomeStyle.BasicTickImgView}>
                 <Image
                   source={BasicTick}
-                  style={{
-                    height: responsiveScreenHeight(4),
-                    width: responsiveScreenWidth(8),
-                    tintColor: '#fff',
-                  }}
+                  style={HomeStyle.BasicTickImg}
                   resizeMode="contain"
                 />
               </View>
@@ -338,7 +309,7 @@ const Home = ({navigation}) => {
             <View style={{alignSelf: 'center'}}>
               <Text
                 style={[
-                  styles.subTitle,
+                  HomeStyle.subTitle,
                   {textAlign: 'center', width: responsiveScreenWidth(50)},
                 ]}>
                 Are you certain you want to go online
@@ -346,15 +317,10 @@ const Home = ({navigation}) => {
             </View>
 
             {/* Close Modal Button */}
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}>
+            <View style={HomeStyle.CancelYesBtnView}>
               <TouchableOpacity
                 style={[
-                  styles.button,
+                  HomeStyle.button,
                   {
                     backgroundColor: '#0C3384',
                     // backgroundColor: 'red',
@@ -364,18 +330,18 @@ const Home = ({navigation}) => {
                   },
                 ]}
                 onPress={() => setOnlineModalVisible(false)}>
-                <Text style={styles.buttonText}>Cancel</Text>
+                <Text style={HomeStyle.buttonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
-                  styles.button,
+                  HomeStyle.button,
                   {
                     backgroundColor: '#04B725',
                     width: responsiveScreenWidth(20),
                   },
                 ]}
-                onPress={() => setModalVisible(false)}>
-                <Text style={styles.buttonText}>Yes</Text>
+                onPress={handleConfirmStatusChange}>
+                <Text style={HomeStyle.buttonText}>Yes</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -383,6 +349,7 @@ const Home = ({navigation}) => {
       </Modal>
 
       {/* Map Modal */}
+
       <Modal
         transparent
         visible={mapModalVisible}
@@ -390,11 +357,14 @@ const Home = ({navigation}) => {
         // animationType="none"
         onRequestClose={closeModal} // Handles back button on Android
       >
-        <View style={styles.modalContainer}>
+        <View style={HomeStyle.modalContainer}>
           <Animated.View
             style={[
-              styles.MapModalContent,
-              {transform: [{translateY}], height: responsiveScreenHeight(120)},
+              HomeStyle.MapModalContent,
+              {
+                transform: [{translateY}],
+                height: responsiveScreenHeight(120),
+              },
             ]}>
             <View style={{paddingBottom: responsiveScreenHeight(2)}}>
               <TouchableOpacity
@@ -504,7 +474,7 @@ const Home = ({navigation}) => {
                       alignItems: 'center',
                       flexDirection: 'row',
                     }}>
-                    <View style={styles.step}>
+                    <View style={HomeStyle.step}>
                       <Image
                         source={Compass}
                         style={{
@@ -513,7 +483,7 @@ const Home = ({navigation}) => {
                         }}
                         resizeMode="contain"
                       />
-                      <Text style={styles.textSteps}>
+                      <Text style={HomeStyle.textSteps}>
                         Tiruppur, Tamil Nadu, India
                       </Text>
                     </View>
@@ -539,7 +509,7 @@ const Home = ({navigation}) => {
                       alignItems: 'center',
                       flexDirection: 'row',
                     }}>
-                    <View style={styles.step}>
+                    <View style={HomeStyle.step}>
                       <Image
                         source={Destination}
                         style={{
@@ -548,7 +518,7 @@ const Home = ({navigation}) => {
                         }}
                         resizeMode="contain"
                       />
-                      <Text style={styles.textSteps}>
+                      <Text style={HomeStyle.textSteps}>
                         Salem, Tamil Nadu, India
                       </Text>
                     </View>
@@ -579,7 +549,7 @@ const Home = ({navigation}) => {
                     paddingBottom: responsiveScreenHeight(1),
                   }}>
                   <TouchableOpacity
-                  onPress={() => setAcceptModalVisible(true)}
+                    onPress={() => setAcceptModalVisible(true)}
                     style={{
                       width: responsiveScreenWidth(90),
                       padding: responsiveScreenHeight(2),
@@ -701,10 +671,10 @@ const Home = ({navigation}) => {
           </Animated.View>
         </View>
         <Modal visible={acceptModalVisible} transparent animationType="fade">
-          <View style={styles.AcceptModalContainer}>
-            <View style={styles.AcceptModalContent}>
+          <View style={HomeStyle.AcceptModalContainer}>
+            <View style={HomeStyle.AcceptModalContent}>
               {/* Top Blue Section */}
-              <View style={styles.AcceptBlueSection}>
+              <View style={HomeStyle.AcceptBlueSection}>
                 <View
                   style={{
                     height: responsiveScreenHeight(8),
@@ -726,13 +696,13 @@ const Home = ({navigation}) => {
               </View>
 
               {/* White Section with Text and Buttons */}
-              <View style={styles.AcceptWhiteSection}>
-                <Text style={styles.AcceptModalText}>
+              <View style={HomeStyle.AcceptWhiteSection}>
+                <Text style={HomeStyle.AcceptModalText}>
                   You will not receive new riders and notifications
                 </Text>
-                <View style={styles.AcceptButtonContainer}>
+                <View style={HomeStyle.AcceptButtonContainer}>
                   <TouchableOpacity
-                    style={styles.AcceptNoButton}
+                    style={HomeStyle.AcceptNoButton}
                     onPress={() => setAcceptModalVisible(false)}>
                     <Image
                       source={Cross}
@@ -742,10 +712,10 @@ const Home = ({navigation}) => {
                       }}
                       resizeMode="contain"
                     />
-                    <Text style={styles.AcceptNoText}>No</Text>
+                    <Text style={HomeStyle.AcceptNoText}>No</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.AcceptYesButton}
+                    style={HomeStyle.AcceptYesButton}
                     onPress={handleYes}>
                     <Image
                       source={BasicTick}
@@ -756,7 +726,7 @@ const Home = ({navigation}) => {
                       }}
                       resizeMode="contain"
                     />
-                    <Text style={styles.AcceptYesText}>Yes</Text>
+                    <Text style={HomeStyle.AcceptYesText}>Yes</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -764,294 +734,860 @@ const Home = ({navigation}) => {
           </View>
         </Modal>
       </Modal>
+
+      {/* Map Tracking  Modal */}
+      <Modal
+        transparent
+        visible={tripStartModal}
+        animationType="slide"
+        // animationType="none"
+        // onRequestClose={closeModal} // Handles back button on Android
+      >
+        <View style={HomeStyle.modalContainer}>
+          <Animated.View
+            style={[HomeStyle.MapModalContent, {transform: [{translateY}]}]}>
+            <TouchableOpacity
+              onPress={() => setTripStartModal(false)}
+              style={{
+                height: responsiveScreenHeight(1),
+                width: responsiveScreenWidth(12),
+                backgroundColor: '#0C3384',
+                borderRadius: responsiveScreenWidth(4),
+              }}></TouchableOpacity>
+            <View
+              style={{
+                paddingTop: responsiveScreenHeight(4),
+              }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                  }}>
+                  <View
+                    style={{
+                      height: responsiveScreenHeight(8),
+                      width: responsiveScreenHeight(8),
+                      borderRadius: responsiveScreenHeight(4),
+                      borderWidth: 6,
+                      borderColor: 'yellow',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}>
+                    <View
+                      style={{
+                        height: responsiveScreenHeight(7),
+                        width: responsiveScreenHeight(7),
+                        borderRadius: responsiveScreenHeight(3.5),
+                        borderWidth: 4,
+                        borderColor: 'blue',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}>
+                      <Text
+                        style={{
+                          fontSize: responsiveScreenFontSize(3),
+                          fontWeight: '600',
+                          color: 'blue',
+                          lineHeight: 40,
+                        }}>
+                        Bt
+                      </Text>
+                    </View>
+                  </View>
+                  <View>
+                    <Text
+                      style={{
+                        fontSize: responsiveScreenFontSize(2),
+                        fontWeight: '700',
+                        color: '#000',
+                        lineHeight: 40,
+                      }}>
+                      KANNAN RAJ
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: responsiveScreenFontSize(2),
+                        fontWeight: '500',
+                        color: '#000',
+                        lineHeight: 30,
+                      }}>
+                      kannan@123
+                    </Text>
+                  </View>
+                </View>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                  }}>
+                  <View>
+                    <View
+                      style={{
+                        height: responsiveScreenHeight(4),
+                        width: responsiveScreenHeight(6),
+                        borderRadius: responsiveScreenHeight(1),
+                        borderWidth: 1,
+                        borderColor: 'blue',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}>
+                      <Text
+                        style={{
+                          fontSize: responsiveScreenFontSize(2),
+                          fontWeight: '700',
+                          color: '#000',
+                          lineHeight: 20,
+                        }}>
+                        SOS
+                      </Text>
+                    </View>
+                  </View>
+                  <View
+                    style={{
+                      paddingLeft: responsiveScreenWidth(2),
+                      paddingRight: responsiveScreenWidth(2),
+                    }}>
+                    <View
+                      style={{
+                        height: responsiveScreenHeight(4),
+                        width: responsiveScreenHeight(6),
+                        borderRadius: responsiveScreenHeight(1),
+                        borderWidth: 1,
+                        borderColor: 'blue',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}>
+                      <Image
+                        source={PhoneCall}
+                        style={{
+                          height: responsiveScreenHeight(5),
+                          width: responsiveScreenWidth(3),
+                        }}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  </View>
+                  <View>
+                    <View
+                      style={{
+                        height: responsiveScreenHeight(4),
+                        width: responsiveScreenHeight(6),
+                        borderRadius: responsiveScreenHeight(1),
+                        borderWidth: 1,
+                        borderColor: 'blue',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}>
+                      <Image
+                        source={SMSIcon}
+                        style={{
+                          height: responsiveScreenHeight(4),
+                          width: responsiveScreenWidth(7),
+                        }}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  </View>
+                </View>
+              </View>
+              <View style={{paddingTop: responsiveScreenHeight(3)}}>
+                <View
+                  style={{
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexDirection: 'row',
+                  }}>
+                  <View style={HomeStyle.step}>
+                    <Image
+                      source={Compass}
+                      style={{
+                        height: responsiveScreenHeight(4),
+                        width: responsiveScreenWidth(7),
+                      }}
+                      resizeMode="contain"
+                    />
+                    <Text style={HomeStyle.textSteps}>
+                      Tiruppur, Tamil Nadu, India
+                    </Text>
+                  </View>
+                  <View>
+                    <TouchableOpacity
+                      style={{
+                        height: responsiveScreenHeight(4),
+                        width: responsiveScreenHeight(4),
+                        borderRadius: responsiveScreenHeight(1),
+                        borderWidth: 1,
+                        borderColor: 'black',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}>
+                      <Image
+                        source={Destination}
+                        style={{
+                          height: responsiveScreenHeight(4),
+                          width: responsiveScreenWidth(7),
+                        }}
+                        resizeMode="contain"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={{paddingLeft: responsiveScreenWidth(3)}}>
+                  <View
+                    style={{
+                      width: responsiveScreenWidth(1),
+                      height: responsiveScreenHeight(4),
+                      borderStyle: 'dashed',
+                      borderWidth: 1,
+                      borderColor: '#0C3384',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}></View>
+                </View>
+
+                {/* End Location */}
+                <View
+                  style={{
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexDirection: 'row',
+                  }}>
+                  <View style={HomeStyle.step}>
+                    <Image
+                      source={Destination}
+                      style={{
+                        height: responsiveScreenHeight(4),
+                        width: responsiveScreenWidth(7),
+                      }}
+                      resizeMode="contain"
+                    />
+                    <Text style={HomeStyle.textSteps}>
+                      Salem, Tamil Nadu, India
+                    </Text>
+                  </View>
+                  <View>
+                    <TouchableOpacity
+                      style={{
+                        height: responsiveScreenHeight(4),
+                        width: responsiveScreenHeight(4),
+                        borderRadius: responsiveScreenHeight(1),
+                        borderWidth: 1,
+                        borderColor: 'black',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}>
+                      <Image
+                        source={Destination}
+                        style={{
+                          height: responsiveScreenHeight(4),
+                          width: responsiveScreenWidth(7),
+                        }}
+                        resizeMode="contain"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+              <View
+                style={{
+                  justifyContent: 'flex-end',
+                  alignItems: 'flex-end',
+                  paddingTop: responsiveScreenHeight(3),
+                }}>
+                <TouchableOpacity>
+                  <Image
+                    source={MapsCenter}
+                    style={{
+                      height: responsiveScreenHeight(4),
+                      width: responsiveScreenWidth(7),
+                    }}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+              </View>
+              <View
+                style={{
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  paddingTop: responsiveScreenHeight(6),
+                  paddingBottom: responsiveScreenHeight(10),
+                }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (!isArrived) {
+                      setArrivedLocationModal(true);
+                    } else {
+                      setArrivedUpdateModal(true);
+                    }
+                  }}
+                  style={{
+                    width: responsiveScreenWidth(90),
+                    padding: responsiveScreenHeight(2),
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: '#0C3384',
+                    borderRadius: responsiveScreenWidth(4),
+                  }}>
+                  <Text
+                    style={{
+                      fontWeight: '700',
+                      fontSize: responsiveScreenFontSize(2),
+                      lineHeight: 36.14,
+                      color: '#fff',
+                    }}>
+                    {isArrived ? 'Arrived' : 'Arriving'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={HomeStyle.MapCloseButton}
+              onPress={closeModal}>
+              <Text style={HomeStyle.MapCloseButtonText}>Close</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+        <Modal visible={arrivedLocationModal} transparent animationType="slide">
+          <View style={HomeStyle.modalContainer}>
+            <View
+              style={[HomeStyle.modalContent, {backgroundColor: '#0C3384'}]}>
+              <View style={{alignSelf: 'center'}}>
+                <View
+                  style={{
+                    height: responsiveScreenHeight(8),
+                    width: responsiveScreenHeight(8),
+                    borderRadius: responsiveScreenHeight(4),
+                    justifyContent: 'center',
+                    alignItems: 'center',
+
+                    backgroundColor: '#396ACFFC',
+                  }}>
+                  <Image
+                    source={BasicTick}
+                    style={{
+                      height: responsiveScreenHeight(4),
+                      width: responsiveScreenWidth(8),
+                      tintColor: '#fff',
+                    }}
+                    resizeMode="contain"
+                  />
+                </View>
+              </View>
+
+              <View style={{alignSelf: 'center'}}>
+                <Text
+                  style={[
+                    HomeStyle.subTitle,
+                    {textAlign: 'center', width: responsiveScreenWidth(50)},
+                  ]}>
+                  Are you sure that you are on way to the of pick up location
+                </Text>
+              </View>
+
+              {/* Close Modal Button */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}>
+                <TouchableOpacity
+                  style={[
+                    HomeStyle.button,
+                    {
+                      backgroundColor: '#0C3384',
+                      // backgroundColor: 'red',
+                      width: responsiveScreenWidth(20),
+                      borderColor: '#000',
+                      borderWidth: 1,
+                    },
+                  ]}
+                  onPress={() => setOnlineModalVisible(false)}>
+                  <Text style={HomeStyle.buttonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    HomeStyle.button,
+                    {
+                      backgroundColor: '#04B725',
+                      width: responsiveScreenWidth(20),
+                    },
+                  ]}
+                  onPress={() => {
+                    setIsArrived(true); // Update to "Arrived"
+                    setArrivedLocationModal(false);
+                    // Close this modal
+                  }}>
+                  <Text style={HomeStyle.buttonText}>Yes</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+        <Modal visible={arrivedUpdateModal} transparent animationType="slide">
+          <View style={HomeStyle.modalContainer}>
+            <View
+              style={[HomeStyle.modalContent, {backgroundColor: '#0C3384'}]}>
+              <View style={{alignSelf: 'center'}}>
+                <View
+                  style={{
+                    height: responsiveScreenHeight(8),
+                    width: responsiveScreenHeight(8),
+                    borderRadius: responsiveScreenHeight(4),
+                    justifyContent: 'center',
+                    alignItems: 'center',
+
+                    backgroundColor: '#396ACFFC',
+                  }}>
+                  <Image
+                    source={BasicTick}
+                    style={{
+                      height: responsiveScreenHeight(4),
+                      width: responsiveScreenWidth(8),
+                      tintColor: '#fff',
+                    }}
+                    resizeMode="contain"
+                  />
+                </View>
+              </View>
+
+              <View style={{alignSelf: 'center'}}>
+                <Text
+                  style={[
+                    HomeStyle.subTitle,
+                    {textAlign: 'center', width: responsiveScreenWidth(50)},
+                  ]}>
+                  Are you sure that you want to start ride
+                </Text>
+              </View>
+
+              {/* Close Modal Button */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}>
+                <TouchableOpacity
+                  style={[
+                    HomeStyle.button,
+                    {
+                      backgroundColor: '#0C3384',
+                      // backgroundColor: 'red',
+                      width: responsiveScreenWidth(20),
+                      borderColor: '#000',
+                      borderWidth: 1,
+                    },
+                  ]}
+                  onPress={() => setOnlineModalVisible(false)}>
+                  <Text style={HomeStyle.buttonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    HomeStyle.button,
+                    {
+                      backgroundColor: '#04B725',
+                      width: responsiveScreenWidth(20),
+                    },
+                  ]}
+                  onPress={() => {
+                    setStartRideModal(true);
+                  }}>
+                  <Text style={HomeStyle.buttonText}>Yes</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+          <Modal
+            transparent
+            visible={startRideModal}
+            animationType="slide"
+            // animationType="none"
+            // onRequestClose={closeModal} // Handles back button on Android
+          >
+            <View style={HomeStyle.modalContainer}>
+              <Animated.View
+                style={[
+                  HomeStyle.MapModalContent,
+                  {transform: [{translateY}]},
+                ]}>
+                <TouchableOpacity
+                  onPress={() => setTripStartModal(false)}
+                  style={{
+                    height: responsiveScreenHeight(1),
+                    width: responsiveScreenWidth(12),
+                    backgroundColor: '#0C3384',
+                    borderRadius: responsiveScreenWidth(4),
+                  }}></TouchableOpacity>
+                <View
+                  style={{
+                    paddingTop: responsiveScreenHeight(4),
+                  }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                      }}>
+                      <View
+                        style={{
+                          height: responsiveScreenHeight(8),
+                          width: responsiveScreenHeight(8),
+                          borderRadius: responsiveScreenHeight(4),
+                          borderWidth: 6,
+                          borderColor: 'yellow',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}>
+                        <View
+                          style={{
+                            height: responsiveScreenHeight(7),
+                            width: responsiveScreenHeight(7),
+                            borderRadius: responsiveScreenHeight(3.5),
+                            borderWidth: 4,
+                            borderColor: 'blue',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}>
+                          <Text
+                            style={{
+                              fontSize: responsiveScreenFontSize(3),
+                              fontWeight: '600',
+                              color: 'blue',
+                              lineHeight: 40,
+                            }}>
+                            Bt
+                          </Text>
+                        </View>
+                      </View>
+                      <View>
+                        <Text
+                          style={{
+                            fontSize: responsiveScreenFontSize(2),
+                            fontWeight: '700',
+                            color: '#000',
+                            lineHeight: 40,
+                          }}>
+                          KANNAN RAJ
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: responsiveScreenFontSize(2),
+                            fontWeight: '500',
+                            color: '#000',
+                            lineHeight: 30,
+                          }}>
+                          kannan@123
+                        </Text>
+                      </View>
+                    </View>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                      }}>
+                      <View>
+                        <View
+                          style={{
+                            height: responsiveScreenHeight(4),
+                            width: responsiveScreenHeight(6),
+                            borderRadius: responsiveScreenHeight(1),
+                            borderWidth: 1,
+                            borderColor: 'blue',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}>
+                          <Text
+                            style={{
+                              fontSize: responsiveScreenFontSize(2),
+                              fontWeight: '700',
+                              color: '#000',
+                              lineHeight: 20,
+                            }}>
+                            SOS
+                          </Text>
+                        </View>
+                      </View>
+                      <View
+                        style={{
+                          paddingLeft: responsiveScreenWidth(2),
+                          paddingRight: responsiveScreenWidth(2),
+                        }}>
+                        <View
+                          style={{
+                            height: responsiveScreenHeight(4),
+                            width: responsiveScreenHeight(6),
+                            borderRadius: responsiveScreenHeight(1),
+                            borderWidth: 1,
+                            borderColor: 'blue',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}>
+                          <Image
+                            source={PhoneCall}
+                            style={{
+                              height: responsiveScreenHeight(5),
+                              width: responsiveScreenWidth(3),
+                            }}
+                            resizeMode="contain"
+                          />
+                        </View>
+                      </View>
+                      <View>
+                        <View
+                          style={{
+                            height: responsiveScreenHeight(4),
+                            width: responsiveScreenHeight(6),
+                            borderRadius: responsiveScreenHeight(1),
+                            borderWidth: 1,
+                            borderColor: 'blue',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}>
+                          <Image
+                            source={SMSIcon}
+                            style={{
+                              height: responsiveScreenHeight(4),
+                              width: responsiveScreenWidth(7),
+                            }}
+                            resizeMode="contain"
+                          />
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                  <View style={{paddingTop: responsiveScreenHeight(3)}}>
+                    <View
+                      style={{
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexDirection: 'row',
+                      }}>
+                      <View style={HomeStyle.step}>
+                        <Image
+                          source={Compass}
+                          style={{
+                            height: responsiveScreenHeight(4),
+                            width: responsiveScreenWidth(7),
+                          }}
+                          resizeMode="contain"
+                        />
+                        <Text style={HomeStyle.textSteps}>
+                          Tiruppur, Tamil Nadu, India
+                        </Text>
+                      </View>
+                      <View>
+                        <TouchableOpacity
+                          style={{
+                            height: responsiveScreenHeight(4),
+                            width: responsiveScreenHeight(4),
+                            borderRadius: responsiveScreenHeight(1),
+                            borderWidth: 1,
+                            borderColor: 'black',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}>
+                          <Image
+                            source={Destination}
+                            style={{
+                              height: responsiveScreenHeight(4),
+                              width: responsiveScreenWidth(7),
+                            }}
+                            resizeMode="contain"
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    <View style={{paddingLeft: responsiveScreenWidth(3)}}>
+                      <View
+                        style={{
+                          width: responsiveScreenWidth(1),
+                          height: responsiveScreenHeight(4),
+                          borderStyle: 'dashed',
+                          borderWidth: 1,
+                          borderColor: '#0C3384',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}></View>
+                    </View>
+
+                    {/* End Location */}
+                    <View
+                      style={{
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexDirection: 'row',
+                      }}>
+                      <View style={HomeStyle.step}>
+                        <Image
+                          source={Destination}
+                          style={{
+                            height: responsiveScreenHeight(4),
+                            width: responsiveScreenWidth(7),
+                          }}
+                          resizeMode="contain"
+                        />
+                        <Text style={HomeStyle.textSteps}>
+                          Salem, Tamil Nadu, India
+                        </Text>
+                      </View>
+                      <View>
+                        <TouchableOpacity
+                          style={{
+                            height: responsiveScreenHeight(4),
+                            width: responsiveScreenHeight(4),
+                            borderRadius: responsiveScreenHeight(1),
+                            borderWidth: 1,
+                            borderColor: 'black',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}>
+                          <Image
+                            source={Destination}
+                            style={{
+                              height: responsiveScreenHeight(4),
+                              width: responsiveScreenWidth(7),
+                            }}
+                            resizeMode="contain"
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                  <View
+                    style={{
+                      justifyContent: 'flex-end',
+                      alignItems: 'flex-end',
+                      paddingTop: responsiveScreenHeight(3),
+                    }}>
+                    <TouchableOpacity>
+                      <Image
+                        source={MapsCenter}
+                        style={{
+                          height: responsiveScreenHeight(4),
+                          width: responsiveScreenWidth(7),
+                        }}
+                        resizeMode="contain"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  <View
+                    style={{
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      paddingTop: responsiveScreenHeight(6),
+                      paddingBottom: responsiveScreenHeight(10),
+                    }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setModalVisible(true);
+                      }}
+                      style={{
+                        width: responsiveScreenWidth(90),
+                        padding: responsiveScreenHeight(2),
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: '#0C3384',
+                        borderRadius: responsiveScreenWidth(4),
+                      }}>
+                      <Text
+                        style={{
+                          fontWeight: '700',
+                          fontSize: responsiveScreenFontSize(2),
+                          lineHeight: 36.14,
+                          color: '#fff',
+                        }}>
+                        Start Ride
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </Animated.View>
+            </View>
+            <Modal visible={modalVisible} transparent animationType="slide">
+              <View style={HomeStyle.modalContainer}>
+                <View style={HomeStyle.modalContent}>
+                  <Text style={HomeStyle.title}>Enter OTP</Text>
+                  <Text style={HomeStyle.subTitle}>
+                    Enter the otp display in customers mobile to start the ride{' '}
+                  </Text>
+
+                  {/* OTP Input inside Modal */}
+                  <CodeField
+                    ref={ref}
+                    {...props}
+                    value={otpValue}
+                    onChangeText={setOtpValue}
+                    cellCount={CELL_COUNT}
+                    rootStyle={HomeStyle.codeFieldRoot}
+                    keyboardType="number-pad"
+                    textContentType="oneTimeCode"
+                    renderCell={({index, symbol, isFocused}) => (
+                      <View
+                        key={index}
+                        style={[
+                          HomeStyle.cell,
+                          isFocused && HomeStyle.focusCell,
+                        ]}
+                        onLayout={getCellOnLayoutHandler(index)}>
+                        <Text style={HomeStyle.cellText}>{symbol || ' '}</Text>
+                      </View>
+                    )}
+                  />
+
+                  {/* Close Modal Button */}
+                  <TouchableOpacity
+                    style={HomeStyle.button}
+                    onPress={() => {
+                      setKMVisible(true);
+                    }}>
+                    <Text style={HomeStyle.buttonText}>Confirm</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              <Modal visible={kmVisible} transparent animationType="slide">
+                <TouchableWithoutFeedback onPress={() => setKMVisible(false)}>
+                  <View style={HomeStyle.modalContainer}>
+                    <View style={HomeStyle.modalContent}>
+                      <Text style={HomeStyle.title}>Enter Km</Text>
+                      <TextInput
+                        label="Starting Km"
+                        mode="outlined"
+                        value={text}
+                        onChangeText={text => setText(text)}
+                        style={HomeStyle.input}
+                      />
+                      <TouchableOpacity
+                        onPress={openMaps}
+                        style={[
+                          HomeStyle.button,
+                          {
+                            alignSelf: 'center',
+                            width: responsiveScreenWidth(70),
+                          },
+                        ]}>
+                        <Text style={HomeStyle.buttonText}>Confirm</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </TouchableWithoutFeedback>
+              </Modal>
+            </Modal>
+          </Modal>
+        </Modal>
+      </Modal>
     </View>
   );
 };
 
 export default Home;
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    // padding: 20,
-  },
-  input: {
-    width: responsiveScreenWidth(70),
-    padding: responsiveScreenHeight(2),
-    // borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    width: responsiveScreenWidth(60),
-    padding: responsiveScreenHeight(2),
-
-    borderRadius: 5,
-    marginTop: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  DrawerButton: {
-    // backgroundColor:"red",
-    width: responsiveScreenWidth(20),
-    padding: responsiveScreenHeight(2),
-    position: 'absolute',
-    top: responsiveScreenHeight(1),
-    left: responsiveScreenWidth(-2),
-    borderRadius: 5,
-    marginTop: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  NotificationButton: {
-    // backgroundColor:"red",
-    width: responsiveScreenWidth(20),
-    padding: responsiveScreenHeight(2),
-    position: 'absolute',
-    top: responsiveScreenHeight(1),
-    right: responsiveScreenWidth(-2),
-    borderRadius: 5,
-    marginTop: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  MapButton: {
-    position: 'absolute',
-    bottom: 100,
-    right: 20,
-    backgroundColor: '#007AFF',
-    width: responsiveScreenWidth(60),
-    padding: responsiveScreenHeight(2),
-
-    borderRadius: 5,
-    marginTop: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  KMButton: {
-    position: 'absolute',
-    left: 10,
-    right: 20,
-    backgroundColor: '#007AFF',
-    width: responsiveScreenWidth(60),
-    padding: responsiveScreenHeight(2),
-
-    borderRadius: 5,
-    marginTop: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  KMButton: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    backgroundColor: '#007AFF',
-    width: responsiveScreenWidth(60),
-    padding: responsiveScreenHeight(2),
-
-    borderRadius: 5,
-    marginTop: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  OnlineButton: {
-    position: 'absolute',
-    left: 80,
-    top: 35,
-    backgroundColor: '#fff',
-    width: responsiveScreenWidth(50),
-    padding: responsiveScreenHeight(1),
-    borderWidth: 1,
-    borderColor: '#000',
-    borderRadius: responsiveScreenWidth(2),
-    marginTop: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  OtpButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 20,
-    backgroundColor: '#007AFF',
-    width: responsiveScreenWidth(60),
-    padding: responsiveScreenHeight(2),
-
-    borderRadius: 5,
-    marginTop: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '80%',
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    // alignItems: 'center',
-  },
-  title: {
-    fontSize: responsiveScreenFontSize(2),
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#000',
-  },
-  subTitle: {
-    fontSize: responsiveScreenFontSize(2),
-    fontWeight: '200',
-    marginBottom: 15,
-    color: 'grey',
-  },
-  codeFieldRoot: {
-    marginBottom: 20,
-  },
-  cell: {
-    width: 50,
-    height: 50,
-    lineHeight: 48,
-    fontSize: 24,
-    borderWidth: 2,
-    borderColor: '#ccc',
-    textAlign: 'center',
-    borderRadius: 8,
-    marginHorizontal: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  focusCell: {
-    borderColor: '#007AFF',
-  },
-  cellText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  MapModalText: {
-    fontSize: 18,
-    marginBottom: 20,
-  },
-  MapCloseButton: {
-    backgroundColor: '#FF3B30',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  MapCloseButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  MapModalContent: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderTopLeftRadius: responsiveScreenHeight(4),
-    borderTopRightRadius: responsiveScreenHeight(4),
-    alignItems: 'center',
-    height: responsiveScreenHeight(80),
-  },
-  MapHandle: {
-    width: 40,
-    height: 5,
-    backgroundColor: '#ccc',
-    borderRadius: 5,
-    marginBottom: 10,
-  },
-  step: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  textSteps: {
-    fontSize: 14,
-    color: '#333',
-  },
-  line: {
-    marginLeft: 9, // Align with icons
-  },
-  dash: {
-    width: responsiveScreenWidth(1), // Vertical Line
-    height: 100, // Adjust height
-    flexDirection: 'column', // For vertical alignment
-  },
-  map: {
-    // flex: 1,
-    height: '100%',
-    width: '100%',
-  },
-  AcceptModalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  AcceptModalContent: {
-    width: '80%',
-    height: '30%',
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  AcceptBlueSection: {
-    flex: 1,
-    backgroundColor: '#0C3384',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  AcceptWhiteSection: {
-    flex: 1,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  AcceptModalText: {
-    fontSize: 16,
-    fontWeight: '500',
-    textAlign: 'center',
-    color: '#000',
-    marginBottom: 20,
-  },
-  AcceptButtonContainer: {
-    flexDirection: 'row',
-    gap: 15,
-  },
-  AcceptNoButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#0C3384',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  AcceptYesButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    backgroundColor: '#0C3384',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  AcceptNoText: {
-    color: '#0C3384',
-    fontWeight: '600',
-    paddingLeft: responsiveScreenWidth(1),
-  },
-  AcceptYesText: {
-    color: '#fff',
-    fontWeight: '600',
-    paddingLeft: responsiveScreenWidth(1),
-  },
-});

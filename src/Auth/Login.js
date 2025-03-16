@@ -15,10 +15,26 @@ import {
   responsiveScreenWidth,
   responsiveScreenFontSize,
 } from 'react-native-responsive-dimensions';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
+import {useSelector, useDispatch} from 'react-redux';
+import {loginUser} from '../redux/Slices/LoginSlices';
 
 const Login = () => {
-  const navigation = useNavigation()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const navigation = useNavigation();
+  const dispatch = useDispatch();
+  const {loading, error, user} = useSelector(state => state.login);
+
+
+  const handleLogin = () => {
+    dispatch(loginUser({ email, password })).then((res) => {
+      if (res.meta.requestStatus === 'fulfilled') {
+        navigation.navigate('DrawerNavigation');
+      }
+    });
+  };
+
   return (
     <View style={{flex: 1, backgroundColor: '#fff'}}>
       <StatusBar
@@ -62,9 +78,13 @@ const Login = () => {
               padding: responsiveScreenHeight(2),
               borderColor: '#0C3384',
               borderWidth: 1,
+              color: '000',
               borderRadius: responsiveScreenWidth(4),
             }}
             placeholder="Email"
+            placeholderTextColor="#000"
+            value={email}
+            onChangeText={setEmail}
           />
         </View>
         <View>
@@ -85,10 +105,14 @@ const Login = () => {
               width: responsiveScreenWidth(90),
               padding: responsiveScreenHeight(2),
               borderColor: '#0C3384',
+              color: '#000',
               borderWidth: 1,
               borderRadius: responsiveScreenWidth(4),
             }}
             placeholder="Password"
+            placeholderTextColor="#000"
+            value={password}
+            onChangeText={setPassword}
           />
         </View>
 
@@ -99,7 +123,7 @@ const Login = () => {
             paddingTop: responsiveScreenHeight(10),
           }}>
           <TouchableOpacity
-          onPress={()=>navigation.navigate('DrawerNavigation')}
+            onPress={handleLogin}
             style={{
               width: responsiveScreenWidth(60),
               padding: responsiveScreenHeight(2),

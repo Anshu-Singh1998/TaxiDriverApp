@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,13 @@ import {
   TextInput,
   StyleSheet,
 } from 'react-native';
-import { CheckBox, Icon } from '@rneui/themed';
+import {CheckBox, Icon} from '@rneui/themed';
 import {
   responsiveScreenHeight,
   responsiveScreenWidth,
   responsiveScreenFontSize,
 } from 'react-native-responsive-dimensions';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import DriverLogo from '../../Assets/DriverLogo.png';
 
 const SignIn = () => {
@@ -40,15 +40,22 @@ const SignIn = () => {
 
       {/* Input Fields */}
       <View style={styles.formContainer}>
-        <TextInput style={styles.input} placeholder="Email" keyboardType="email-address" />
-        
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          keyboardType="email-address"
+          placeholderTextColor="#000"
+        />
+
         <View style={styles.passwordContainer}>
           <TextInput
             style={styles.passwordInput}
             placeholder="Password"
             secureTextEntry={!passwordVisible}
+            placeholderTextColor="#000"
           />
-          <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
+          <TouchableOpacity
+            onPress={() => setPasswordVisible(!passwordVisible)}>
             <Icon
               name={passwordVisible ? 'eye' : 'eye-off'}
               type="feather"
@@ -73,17 +80,21 @@ const SignIn = () => {
 
         {/* Terms & Conditions */}
         <View style={styles.termsContainer}>
-          <CheckBox checked={checkedTerms} onPress={() => setCheckedTerms(!checkedTerms)} />
+          <CheckBox
+            checked={checkedTerms}
+            onPress={() => setCheckedTerms(!checkedTerms)}
+          />
           <Text style={styles.termsText}>
-            I agree to the{' '}
-            <Text style={styles.linkText}>Terms</Text> &{' '}
+            I agree to the <Text style={styles.linkText}>Terms</Text> &{' '}
             <Text style={styles.linkText}>Privacy Policy</Text>
           </Text>
         </View>
 
         {/* Log In Button */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.loginButton}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Login')}
+            style={styles.loginButton}>
             <Text style={styles.loginButtonText}>Log In</Text>
           </TouchableOpacity>
         </View>
@@ -133,6 +144,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: responsiveScreenWidth(4),
     marginBottom: responsiveScreenHeight(2),
+    color: '#000',
   },
   passwordContainer: {
     flexDirection: 'row',
@@ -147,6 +159,7 @@ const styles = StyleSheet.create({
   passwordInput: {
     flex: 1,
     paddingVertical: responsiveScreenHeight(2),
+    color: '000',
   },
   rememberForgotContainer: {
     flexDirection: 'row',
@@ -168,7 +181,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingTop: responsiveScreenHeight(2),
-    marginLeft:responsiveScreenWidth(-2)
+    marginLeft: responsiveScreenWidth(-2),
   },
   termsText: {
     fontWeight: '700',

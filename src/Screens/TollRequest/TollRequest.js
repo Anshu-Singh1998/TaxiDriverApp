@@ -5,7 +5,7 @@ import {
   Image,
   Animated,
   TouchableOpacity,
-  StyleSheet,
+  TollRequestStyleheet,
   FlatList,
   ScrollView,
   TextInput,
@@ -21,10 +21,11 @@ import {
 import Calender from '../../../Assets/Calender.png';
 import Compass from '../../../Assets/Compass.png';
 import Destination from '../../../Assets/Destination.png';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
+import TollRequestStyle from './TollRequestStyle';
 
 const TollRequest = () => {
-  const navigation = useNavigation()
+  const navigation = useNavigation();
   const data = [
     {
       id: '1',
@@ -55,224 +56,102 @@ const TollRequest = () => {
     },
   ];
   return (
-    <View style={{flex: 1}}>
+    <View style={TollRequestStyle.MainContainer}>
       <View>
         <StatusBar
           barStyle="light-content"
           backgroundColor="#0C3384"
           animated={true}
         />
-        <View style={styles.header}>
+        <View style={TollRequestStyle.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Image source={Left} resizeMode="contain" style={styles.backIcon} />
+            <Image source={Left} resizeMode="contain" style={TollRequestStyle.backIcon} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Toll Request</Text>
+          <Text style={TollRequestStyle.headerTitle}>Toll Request</Text>
         </View>
         <ScrollView>
-          <View
-            style={{
-              paddingLeft: responsiveScreenWidth(5),
-              paddingRight: responsiveScreenWidth(5),
-              paddingTop: responsiveScreenHeight(1),
-              paddingBottom: responsiveScreenHeight(15),
-            }}>
+          <View style={TollRequestStyle.SpacingValue}>
             <View>
               <FlatList
                 data={data}
                 keyExtractor={item => item.id}
                 renderItem={({item, index}) => (
                   <View style={{paddingBottom: responsiveScreenHeight(1)}}>
-                    <View
-                      style={{
-                        paddingTop: responsiveScreenHeight(2),
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}>
-                      <View
-                        style={{
-                          borderWidth: 1,
-                          borderColor: 'grey',
-                          width: responsiveScreenWidth(90),
-                          padding: responsiveScreenHeight(2),
-                          borderRadius: responsiveScreenWidth(4),
-                        }}>
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            borderBottomWidth: 1,
-                            borderBottomColor: 'grey',
-                          }}>
-                          <View style={{flexDirection: 'row'}}>
+                    <View style={TollRequestStyle.ListRowView}>
+                      <View style={TollRequestStyle.BorderLine}>
+                        <View style={TollRequestStyle.RowViewSpace}>
+                          <View style={TollRequestStyle.CalenderImgRow}>
                             <View>
                               <Image
                                 source={Calender}
-                                style={{
-                                  height: responsiveScreenHeight(4),
-                                  width: responsiveScreenWidth(10),
-                                }}
+                                style={TollRequestStyle.CalenderImg}
                                 resizeMode="contain"
                               />
                             </View>
 
                             <View>
-                              <Text
-                                style={{
-                                  fontWeight: '700',
-                                  fontSize: responsiveScreenFontSize(2),
-                                  lineHeight: 40,
-                                  color: '#000',
-                                }}>
-                                {item.date}
-                              </Text>
+                              <Text style={TollRequestStyle.DateText}>{item.date}</Text>
                             </View>
-                            <View
-                              style={{
-                                paddingLeft: responsiveScreenWidth(0.5),
-                                paddingRight: responsiveScreenWidth(0.5),
-                              }}>
-                              <Text
-                                style={{
-                                  fontWeight: '700',
-                                  fontSize: responsiveScreenFontSize(2),
-                                  lineHeight: 40,
-                                  color: '#000',
-                                }}>
-                                at
-                              </Text>
+                            <View style={TollRequestStyle.AtSpaceView}>
+                              <Text style={TollRequestStyle.AtText}>at</Text>
                             </View>
                             <View>
-                              <Text
-                                style={{
-                                  fontWeight: '700',
-                                  fontSize: responsiveScreenFontSize(2),
-                                  lineHeight: 40,
-                                  color: '#000',
-                                }}>
-                                {item.time}
-                              </Text>
+                              <Text style={TollRequestStyle.TimeText}>{item.time}</Text>
                             </View>
                           </View>
                           <View>
                             <View>
-                              <Text
-                                style={{
-                                  fontWeight: '700',
-                                  fontSize: responsiveScreenFontSize(2),
-                                  lineHeight: 40,
-                                  color: '#000',
-                                }}>
+                              <Text style={TollRequestStyle.RideId}>
                                 Ride Id {item.rideId}
                               </Text>
                             </View>
                           </View>
                         </View>
-                        <View style={{paddingTop: responsiveScreenHeight(3)}}>
-                          <View style={styles.step}>
+                        <View style={TollRequestStyle.StepView}>
+                          <View style={TollRequestStyle.step}>
                             <Image
                               source={Compass}
-                              style={{
-                                height: responsiveScreenHeight(4),
-                                width: responsiveScreenWidth(7),
-                              }}
+                              style={TollRequestStyle.CompassIcon}
                               resizeMode="contain"
                             />
-                            <Text style={styles.textSteps}>
+                            <Text style={TollRequestStyle.textSteps}>
                               {item.startPoint}
                             </Text>
                           </View>
-                          <View style={{paddingLeft: responsiveScreenWidth(3)}}>
-                            <View
-                              style={{
-                                width: responsiveScreenWidth(1),
-                                height: responsiveScreenHeight(4),
-                                borderStyle: 'dashed',
-                                borderWidth: 1,
-                                borderColor: '#0C3384',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                              }}></View>
+                          <View style={TollRequestStyle.lineView}>
+                            <View style={TollRequestStyle.line}></View>
                           </View>
 
                           {/* End Location */}
-                          <View style={styles.step}>
+                          <View style={TollRequestStyle.step}>
                             <Image
                               source={Destination}
-                              style={{
-                                height: responsiveScreenHeight(4),
-                                width: responsiveScreenWidth(7),
-                              }}
+                              style={TollRequestStyle.DestinationImg}
                               resizeMode="contain"
                             />
-                            <Text style={styles.textSteps}>
+                            <Text style={TollRequestStyle.textSteps}>
                               {item.endPoint}
                             </Text>
                           </View>
                         </View>
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}>
+                        <View style={TollRequestStyle.InputCamera}>
                           <View>
                             <TextInput
                               placeholder="Enter Amount"
-                              style={{
-                                borderWidth: 1,
-                                borderColor: 'grey',
-                                width: responsiveScreenWidth(60),
-                                color: '#000',
-                                borderRadius: responsiveScreenWidth(1),
-                                fontSize: responsiveScreenFontSize(2),
-                                padding: responsiveScreenWidth(6),
-                              }}
+                              style={TollRequestStyle.AmountInput}
                             />
                           </View>
-                          <View
-                            style={{
-                              width: responsiveScreenWidth(20),
-                              height: responsiveScreenWidth(20),
-                              borderRadius: responsiveScreenWidth(10),
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                              backgroundColor: 'grey',
-                            }}>
+                          <View style={TollRequestStyle.CameraImgIconView}>
                             <Image
                               source={item.cameraImg}
-                              style={{
-                                width: responsiveScreenWidth(10),
-                                height: responsiveScreenWidth(10),
-                              }}
+                              style={TollRequestStyle.CameraImgIcon}
                               resizeMode="contain"
                             />
                           </View>
                         </View>
-                        <View
-                          style={{
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            paddingTop: responsiveScreenHeight(2),
-                          }}>
-                          <TouchableOpacity
-                            style={{
-                              width: responsiveScreenWidth(80),
-                              padding: responsiveScreenHeight(2),
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                              backgroundColor: '#0C3384',
-                              borderRadius: responsiveScreenWidth(4),
-                            }}>
-                            <Text
-                              style={{
-                                fontWeight: '700',
-                                fontSize: responsiveScreenFontSize(2),
-                                lineHeight: 36.14,
-                                color: '#fff',
-                              }}>
-                              Request
-                            </Text>
+                        <View style={TollRequestStyle.RequestBtnView}>
+                          <TouchableOpacity style={TollRequestStyle.RequestBtn}>
+                            <Text style={TollRequestStyle.RequestBtnText}>Request</Text>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -287,76 +166,5 @@ const TollRequest = () => {
     </View>
   );
 };
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    marginTop: 50,
-  },
-  switchContainer: {
-    width: 400,
-    height: 50,
-    backgroundColor: '#fff',
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    flexDirection: 'row',
-    position: 'relative',
-  },
-  slider: {
-    position: 'absolute',
-    width: '50%',
-    height: '100%',
-    backgroundColor: '#0A2C7D',
-    borderRadius: 25,
-  },
-  option: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  text: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0A2C7D',
-  },
-  selectedText: {
-    color: '#fff',
-  },
-  step: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  textSteps: {
-    fontSize: 14,
-    color: '#333',
-  },
-  line: {
-    marginLeft: 9, // Align with icons
-  },
-  dash: {
-    width: responsiveScreenWidth(1), // Vertical Line
-    height: 100, // Adjust height
-    flexDirection: 'column', // For vertical alignment
-  },
-  header: {
-    height: 80,
-    width: '100%',
-    backgroundColor: '#0C3384',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: responsiveScreenWidth(4),
-  },
-  backIcon: {
-    height: responsiveScreenHeight(6),
-    width: responsiveScreenWidth(12),
-  },
-  headerTitle: {
-    fontWeight: '700',
-    fontSize: responsiveScreenFontSize(3),
-    lineHeight: 40,
-    color: '#FFF',
-    marginLeft: responsiveScreenWidth(5),
-  },
-});
+
 export default TollRequest;

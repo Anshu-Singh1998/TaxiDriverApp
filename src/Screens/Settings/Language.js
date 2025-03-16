@@ -5,23 +5,12 @@ import {
   Image,
   TouchableOpacity,
   Switch,
-  StyleSheet,
   Modal,
 } from 'react-native';
 import * as React from 'react';
 import {useState} from 'react';
-import RightArrow from '../../../Assets/RightArrow.png';
 import Left from '../../../Assets/Left.png';
-import AvailableImg from '../../../Assets/Available.png';
-import LanguageImg from '../../../Assets/Language.png';
-import DeleteAccountImg from '../../../Assets/DeleteAccount.png';
-import ChangePasswordImg from '../../../Assets/ChangePassword.png';
-import PrivacyPolicyImg from '../../../Assets/PrivacyPolicy.png';
-import TermsAndConditionsImg from '../../../Assets/TermsAndConditions.png';
-import AboutUsImg from '../../../Assets/AboutUs.png';
 import Tick from '../../../Assets/Tick.png';
-import BasicTick from '../../../Assets/BasicTick.png';
-import Cross from '../../../Assets/Cross.png';
 
 import {
   responsiveScreenHeight,
@@ -30,6 +19,7 @@ import {
 } from 'react-native-responsive-dimensions';
 import {useNavigation} from '@react-navigation/native';
 import {FlatList} from 'react-native-gesture-handler';
+import LanguageStyle from './LanguageStyle';
 
 const Language = () => {
   const navigation = useNavigation();
@@ -185,90 +175,59 @@ const Language = () => {
   ];
 
   return (
-    <View style={{flex: 1}}>
+    <View style={LanguageStyle.container}>
       <StatusBar
         barStyle="light-content"
         backgroundColor="#0C3384"
         animated={true}
       />
-      <View style={styles.header}>
+      <View style={LanguageStyle.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Image source={Left} resizeMode="contain" style={styles.backIcon} />
+          <Image
+            source={Left}
+            resizeMode="contain"
+            style={LanguageStyle.backIcon}
+          />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Language</Text>
+        <Text style={LanguageStyle.headerTitle}>Language</Text>
       </View>
-      <View
-        style={{
-          justifyContent: 'center',
-          alignItems: 'center',
-          paddingTop: responsiveScreenHeight(3),
-          paddingBottom: responsiveScreenHeight(8),
-        }}>
+      <View style={LanguageStyle.ContainerView}>
         <FlatList
           data={data}
           keyExtractor={item => item.id}
           renderItem={({item, index}) => {
             const isSelected = item.id === selectedId;
             return (
-              <View style={{paddingBottom: responsiveScreenHeight(2)}}>
+              <View style={LanguageStyle.ListViewSpace}>
                 <TouchableOpacity onPress={() => setSelectedId(item.id)}>
                   <View
-                    style={{
-                      width: responsiveScreenWidth(90),
-                      padding: responsiveScreenHeight(2),
-                      backgroundColor: isSelected ? '#9fc1f5' : '#fff',
-                      borderRadius: responsiveScreenWidth(3),
-                      flexDirection: 'row',
-                      justifyContent: isSelected ?'space-between': null,
-                      alignItems: 'center',
-                    }}>
+                    style={[
+                      LanguageStyle.CountryView,
+                      {
+                        backgroundColor: isSelected ? '#9fc1f5' : '#fff',
+
+                        justifyContent: isSelected ? 'space-between' : null,
+                      },
+                    ]}>
                     <View
-                      style={{
-                        width: responsiveScreenHeight(8),
-                        height: responsiveScreenHeight(8),
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: isSelected ? '#d4fcdf' : '#fff',
-                        borderRadius: responsiveScreenWidth(8),
-                      }}>
+                      style={[
+                        LanguageStyle.CountryFlagImgView,
+                        {backgroundColor: isSelected ? '#d4fcdf' : '#fff'},
+                      ]}>
                       <Image
                         source={item.flag}
-                        style={{
-                          height: responsiveScreenHeight(5),
-                          width: responsiveScreenWidth(8),
-                        }}
+                        style={LanguageStyle.CountryFlagImg}
                         resizeMode="contain"
                       />
                     </View>
-                    <View
-                      style={{
-                        paddingLeft: responsiveScreenHeight(3),
-                      }}>
-                      <Text
-                        style={{
-                          fontWeight: '700',
-                          fontSize: responsiveScreenFontSize(3),
-                          lineHeight: 30,
-                          color: '#000',
-                        }}>
+                    <View style={LanguageStyle.TextView}>
+                      <Text style={LanguageStyle.LanguageText}>
                         {item.lang}
                       </Text>
-                      <Text
-                        style={{
-                          fontWeight: '700',
-                          fontSize: responsiveScreenFontSize(2),
-                          lineHeight: 30,
-                          color: '#000',
-                        }}>
+                      <Text style={LanguageStyle.TranslationText}>
                         {item.trans}
                       </Text>
-                      <Text
-                        style={{
-                          fontWeight: '700',
-                          fontSize: responsiveScreenFontSize(2),
-                          lineHeight: 20,
-                          color: '#000',
-                        }}>
+                      <Text style={LanguageStyle.CountryText}>
                         {item.country}
                       </Text>
                     </View>
@@ -276,10 +235,7 @@ const Language = () => {
                       <View>
                         <Image
                           source={Tick}
-                          style={{
-                            height: responsiveScreenHeight(5),
-                            width: responsiveScreenWidth(7),
-                          }}
+                          style={LanguageStyle.TickImg}
                           resizeMode="contain"
                         />
                       </View>
@@ -294,25 +250,5 @@ const Language = () => {
     </View>
   );
 };
-const styles = StyleSheet.create({
-  header: {
-    height: 80,
-    width: '100%',
-    backgroundColor: '#0C3384',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: responsiveScreenWidth(4),
-  },
-  backIcon: {
-    height: responsiveScreenHeight(6),
-    width: responsiveScreenWidth(12),
-  },
-  headerTitle: {
-    fontWeight: '700',
-    fontSize: responsiveScreenFontSize(3),
-    lineHeight: 40,
-    color: '#FFF',
-    marginLeft: responsiveScreenWidth(5),
-  },
-});
+
 export default Language;

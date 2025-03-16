@@ -5,7 +5,7 @@ import {
   Image,
   Animated,
   TouchableOpacity,
-  StyleSheet,
+  RideDetailStyleheet,
   FlatList,
   ScrollView,
   TextInput,
@@ -22,258 +22,123 @@ import {
 import Calender from '../../../Assets/Calender.png';
 import Compass from '../../../Assets/Compass.png';
 import Destination from '../../../Assets/Destination.png';
+import RideDetailStyle from './RideDetailStyle';
 
 const RideDetail = () => {
   return (
-    <View style={{flex: 1}}>
+    <View style={RideDetailStyle.MainContainer}>
       <View>
         <StatusBar
           barStyle="light-content"
           backgroundColor="#0C3384"
           animated={true}
         />
-        <View
-          style={{
-            height: 80,
-            width: '100%',
-            backgroundColor: '#0C3384',
-            flexDirection: 'row',
-          }}>
-          <View
-            style={{
-              justifyContent: 'center',
-              paddingLeft: responsiveScreenWidth(4),
-              paddingTop: responsiveScreenHeight(1),
-            }}>
+        <View style={RideDetailStyle.header}>
+          <TouchableOpacity
+            style={RideDetailStyle.backButton}
+            onPress={() => navigation.goBack()}>
             <Image
               source={Left}
               resizeMode="contain"
-              style={{
-                height: responsiveScreenHeight(6),
-                width: responsiveScreenWidth(12),
-              }}
+              style={RideDetailStyle.backIcon}
             />
-          </View>
-          <View
-            style={{
-              justifyContent: 'center',
-              paddingLeft: responsiveScreenWidth(10),
-              paddingTop: responsiveScreenHeight(1),
-            }}>
-            <Text
-              style={{
-                fontWeight: '700',
-                fontSize: responsiveScreenFontSize(4),
-                lineHeight: 40,
-                color: '#FFF',
-              }}>
-              Ride Detail
-            </Text>
-          </View>
+          </TouchableOpacity>
+          <Text style={RideDetailStyle.headerTitle}>Ride Detail</Text>
         </View>
         <ScrollView>
-          <View
-            style={{
-              paddingLeft: responsiveScreenWidth(5),
-              paddingRight: responsiveScreenWidth(5),
-              paddingTop: responsiveScreenHeight(1),
-              paddingBottom: responsiveScreenHeight(15),
-            }}>
+          <View style={RideDetailStyle.Spacio}>
             <View>
-              <View style={{paddingBottom: responsiveScreenHeight(1)}}>
-                <View
-                  style={{
-                    paddingTop: responsiveScreenHeight(2),
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}>
-                  <View
-                    style={{
-                      borderWidth: 1,
-                      borderColor: 'grey',
-                      width: responsiveScreenWidth(90),
-                      padding: responsiveScreenHeight(2),
-                      borderRadius: responsiveScreenWidth(4),
-                    }}>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}>
-                      <View style={{flexDirection: 'row'}}>
+              <View style={RideDetailStyle.RideDetailsRowViewSpace}>
+                <View style={RideDetailStyle.RideDetailsRowView}>
+                  <View style={RideDetailStyle.RideDetailBox}>
+                    <View style={RideDetailStyle.CalenderDateTimeRow}>
+                      <View style={RideDetailStyle.CalenderDateTime}>
                         <View>
                           <Image
                             source={Calender}
-                            style={{
-                              height: responsiveScreenHeight(4),
-                              width: responsiveScreenWidth(10),
-                            }}
+                            style={RideDetailStyle.CalenderImg}
                             resizeMode="contain"
                           />
                         </View>
 
                         <View>
-                          <Text
-                            style={{
-                              fontWeight: '700',
-                              fontSize: responsiveScreenFontSize(2),
-                              lineHeight: 40,
-                              color: '#000',
-                            }}>
+                          <Text style={RideDetailStyle.DateText}>
                             20 Dec 2024
                           </Text>
                         </View>
-                        <View
-                          style={{
-                            paddingLeft: responsiveScreenWidth(0.5),
-                            paddingRight: responsiveScreenWidth(0.5),
-                          }}>
-                          <Text
-                            style={{
-                              fontWeight: '700',
-                              fontSize: responsiveScreenFontSize(2),
-                              lineHeight: 40,
-                              color: '#000',
-                            }}>
-                            at
-                          </Text>
+                        <View style={RideDetailStyle.AtTextView}>
+                          <Text style={RideDetailStyle.AtText}>at</Text>
                         </View>
                         <View>
-                          <Text
-                            style={{
-                              fontWeight: '700',
-                              fontSize: responsiveScreenFontSize(2),
-                              lineHeight: 40,
-                              color: '#000',
-                            }}>
-                            01:59pm
-                          </Text>
+                          <Text style={RideDetailStyle.TimeText}>01:59pm</Text>
                         </View>
                       </View>
                     </View>
-                    <View style={{paddingLeft: responsiveScreenWidth(2)}}>
-                      <Text
-                        style={{
-                          fontWeight: '700',
-                          fontSize: responsiveScreenFontSize(2),
-                          lineHeight: 40,
-                          color: '#000',
-                        }}>
-                        Ride Id #433
-                      </Text>
+                    <View style={RideDetailStyle.RideTextView}>
+                      <Text style={RideDetailStyle.RideText}>Ride Id #433</Text>
                     </View>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}>
-                      <View style={{flexDirection: 'row'}}>
+                    <View style={RideDetailStyle.DistanceRowView}>
+                      <View style={RideDetailStyle.DistanceRow}>
                         <View>
-                          <Text
-                            style={{
-                              fontWeight: '700',
-                              fontSize: responsiveScreenFontSize(2),
-                              lineHeight: 40,
-                              color: '#000',
-                            }}>
+                          <Text style={RideDetailStyle.DistanceText}>
                             Distance :
                           </Text>
                         </View>
 
                         <View>
-                          <Text
-                            style={{
-                              fontWeight: '700',
-                              fontSize: responsiveScreenFontSize(2),
-                              lineHeight: 40,
-                              color: '#000',
-                              paddingLeft: responsiveScreenWidth(2),
-                            }}>
+                          <Text style={RideDetailStyle.DistanceValueText}>
                             239.00 KM
                           </Text>
                         </View>
                       </View>
                     </View>
-                    <View style={{paddingTop: responsiveScreenHeight(3)}}>
-                      <View style={styles.step}>
+                    <View style={RideDetailStyle.stepper}>
+                      <View style={RideDetailStyle.step}>
                         <Image
                           source={Compass}
-                          style={{
-                            height: responsiveScreenHeight(4),
-                            width: responsiveScreenWidth(7),
-                          }}
+                          style={RideDetailStyle.CompassImg}
                           resizeMode="contain"
                         />
                         <View>
-                          <Text style={styles.textSteps}>
+                          <Text style={RideDetailStyle.textSteps}>
                             20 Dec 2024 at 11:02 AM
                           </Text>
-                          <Text style={styles.textSteps}>
+                          <Text style={RideDetailStyle.textSteps}>
                             Tiruppur, Tamil Nadu, India
                           </Text>
                         </View>
                       </View>
-                      <View style={{paddingLeft: responsiveScreenWidth(3)}}>
-                        <View
-                          style={{
-                            width: responsiveScreenWidth(1),
-                            height: responsiveScreenHeight(4),
-                            borderStyle: 'dashed',
-                            borderWidth: 1,
-                            borderColor: '#0C3384',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                          }}></View>
+                      <View style={RideDetailStyle.lineView}>
+                        <View style={RideDetailStyle.line}></View>
                       </View>
 
                       {/* End Location */}
-                      <View style={styles.step}>
+                      <View style={RideDetailStyle.step}>
                         <Image
                           source={Destination}
-                          style={{
-                            height: responsiveScreenHeight(4),
-                            width: responsiveScreenWidth(7),
-                          }}
+                          style={RideDetailStyle.DestinationImg}
                           resizeMode="contain"
                         />
                         <View>
-                          <Text style={styles.textSteps}>
+                          <Text style={RideDetailStyle.textSteps}>
                             20 Dec 2024 at 11:02 AM
                           </Text>
-                          <Text style={styles.textSteps}>
+                          <Text style={RideDetailStyle.textSteps}>
                             Salem, Tamil Nadu, India
                           </Text>
                         </View>
                       </View>
                     </View>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        paddingTop: responsiveScreenHeight(2),
-                      }}>
+                    <View style={RideDetailStyle.ViewHistoryRow}>
                       <View>
-                        <Text
-                          style={{
-                            fontWeight: '400',
-                            fontSize: responsiveScreenFontSize(2),
-                            lineHeight: 40,
-                            color: '#000',
-                          }}>
+                        <Text style={RideDetailStyle.ViewHistoryText}>
                           View History
                         </Text>
                       </View>
                       <View>
                         <Image
                           source={RightArrow}
-                          style={{
-                            height: responsiveScreenHeight(2),
-                            width: responsiveScreenWidth(5),
-                            tintColor: 'grey',
-                          }}
+                          style={RideDetailStyle.RightArrowIcon}
                           resizeMode="contain"
                         />
                       </View>
@@ -281,88 +146,29 @@ const RideDetail = () => {
                   </View>
                 </View>
               </View>
-              <View style={{paddingBottom: responsiveScreenHeight(1)}}>
-                <View
-                  style={{
-                    paddingTop: responsiveScreenHeight(2),
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}>
-                  <View
-                    style={{
-                      borderWidth: 1,
-                      borderColor: 'grey',
-                      width: responsiveScreenWidth(90),
-                      padding: responsiveScreenHeight(2),
-                      borderRadius: responsiveScreenWidth(4),
-                    }}>
+              <View style={RideDetailStyle.PaymentDetailsBoxSpaceView}>
+                <View style={RideDetailStyle.PaymentDetailsBoxSpace}>
+                  <View style={RideDetailStyle.PaymentDetailsBox}>
                     <View style={{}}>
-                      <Text
-                        style={{
-                          fontWeight: '700',
-                          fontSize: responsiveScreenFontSize(2),
-                          lineHeight: 40,
-                          color: '#000',
-                        }}>
+                      <Text style={RideDetailStyle.PaymentDetailsText}>
                         Payment Details
                       </Text>
                     </View>
 
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        paddingTop: responsiveScreenHeight(2),
-                      }}>
+                    <View style={RideDetailStyle.PaymentValueText}>
                       <View>
-                        <Text
-                          style={{
-                            fontWeight: '400',
-                            fontSize: responsiveScreenFontSize(2),
-                            lineHeight: 40,
-                            color: '#000',
-                          }}>
-                          Via
-                        </Text>
+                        <Text style={RideDetailStyle.ViaText}>Via</Text>
                       </View>
                       <View>
-                        <Text
-                          style={{
-                            fontWeight: '700',
-                            fontSize: responsiveScreenFontSize(2),
-                            lineHeight: 40,
-                            color: '#000',
-                          }}>
-                          Cash
-                        </Text>
+                        <Text style={RideDetailStyle.CashText}>Cash</Text>
                       </View>
                     </View>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}>
+                    <View style={RideDetailStyle.StatusRowView}>
                       <View>
-                        <Text
-                          style={{
-                            fontWeight: '500',
-                            fontSize: responsiveScreenFontSize(2),
-                            lineHeight: 40,
-                            color: '#000',
-                          }}>
-                          Status
-                        </Text>
+                        <Text style={RideDetailStyle.StatusText}>Status</Text>
                       </View>
                       <View>
-                        <Text
-                          style={{
-                            fontWeight: '400',
-                            fontSize: responsiveScreenFontSize(2),
-                            lineHeight: 40,
-                            color: '#000',
-                          }}>
+                        <Text style={RideDetailStyle.StatusValueText}>
                           Pending
                         </Text>
                       </View>
@@ -370,124 +176,46 @@ const RideDetail = () => {
                   </View>
                 </View>
               </View>
-              <View style={{paddingBottom: responsiveScreenHeight(1)}}>
-                <View
-                  style={{
-                    paddingTop: responsiveScreenHeight(2),
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}>
-                  <View
-                    style={{
-                      borderWidth: 1,
-                      borderColor: 'grey',
-                      width: responsiveScreenWidth(90),
-                      padding: responsiveScreenHeight(2),
-                      borderRadius: responsiveScreenWidth(4),
-                    }}>
-                    <View
-                      style={{
-                        borderBottomWidth: 1,
-                        borderBottomColor: 'grey',
-                        paddingBottom: responsiveScreenHeight(2),
-                      }}>
-                      <Text
-                        style={{
-                          fontWeight: '700',
-                          fontSize: responsiveScreenFontSize(2),
-                          lineHeight: 40,
-                          color: '#000',
-                        }}>
+              <View style={RideDetailStyle.AmountBoxSpacingView}>
+                <View style={RideDetailStyle.AmountBoxSpacing}>
+                  <View style={RideDetailStyle.AmountBox}>
+                    <View style={RideDetailStyle.PriceDetailsBottomBorder}>
+                      <Text style={RideDetailStyle.PriceDetailsText}>
                         Price Details
                       </Text>
                     </View>
 
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}>
+                    <View style={RideDetailStyle.RideChargesRowView}>
                       <View>
-                        <Text
-                          style={{
-                            fontWeight: '400',
-                            fontSize: responsiveScreenFontSize(2),
-                            lineHeight: 30,
-                            color: '#000',
-                          }}>
+                        <Text style={RideDetailStyle.RideChargesText}>
                           Ride Charge
                         </Text>
                       </View>
                       <View>
-                        <Text
-                          style={{
-                            fontWeight: '700',
-                            fontSize: responsiveScreenFontSize(2),
-                            lineHeight: 30,
-                            color: '#000',
-                          }}>
+                        <Text style={RideDetailStyle.RideChargesValueText}>
                           Rs 0.00
                         </Text>
                       </View>
                     </View>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-
-                        borderBottomWidth: 1,
-                        borderBottomColor: 'grey',
-                      }}>
+                    <View style={RideDetailStyle.AdditionalChargesRowView}>
                       <View>
-                        <Text
-                          style={{
-                            fontWeight: '400',
-                            fontSize: responsiveScreenFontSize(2),
-                            lineHeight: 30,
-                            color: '#000',
-                          }}>
+                        <Text style={RideDetailStyle.AdditionalChargesText}>
                           Additional Charge
                         </Text>
                       </View>
                       <View>
                         <Text
-                          style={{
-                            fontWeight: '700',
-                            fontSize: responsiveScreenFontSize(2),
-                            lineHeight: 30,
-                            color: '#000',
-                          }}>
+                          style={RideDetailStyle.AdditionalChargesValueText}>
                           Rs 100.00
                         </Text>
                       </View>
                     </View>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}>
+                    <View style={RideDetailStyle.TotalRowView}>
                       <View>
-                        <Text
-                          style={{
-                            fontWeight: '500',
-                            fontSize: responsiveScreenFontSize(2),
-                            lineHeight: 40,
-                            color: 'green',
-                          }}>
-                          Total
-                        </Text>
+                        <Text style={RideDetailStyle.TotalText}>Total</Text>
                       </View>
                       <View>
-                        <Text
-                          style={{
-                            fontWeight: '400',
-                            fontSize: responsiveScreenFontSize(2),
-                            lineHeight: 40,
-                            color: 'green',
-                          }}>
+                        <Text style={RideDetailStyle.TotalValueText}>
                           Rs 100.00
                         </Text>
                       </View>
@@ -496,28 +224,9 @@ const RideDetail = () => {
                 </View>
               </View>
             </View>
-            <View
-              style={{
-                justifyContent: 'center',
-                alignItems: 'center',
-                paddingTop: responsiveScreenHeight(2),
-              }}>
-              <TouchableOpacity
-                style={{
-                  width: responsiveScreenWidth(90),
-                  padding: responsiveScreenHeight(2),
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  backgroundColor: '#0C3384',
-                  borderRadius: responsiveScreenWidth(4),
-                }}>
-                <Text
-                  style={{
-                    fontWeight: '700',
-                    fontSize: responsiveScreenFontSize(2),
-                    lineHeight: 36.14,
-                    color: '#fff',
-                  }}>
+            <View style={RideDetailStyle.CashCollectedBtnView}>
+              <TouchableOpacity style={RideDetailStyle.CashCollectedBtn}>
+                <Text style={RideDetailStyle.CashCollectedText}>
                   Cash Collected
                 </Text>
               </TouchableOpacity>
@@ -528,57 +237,5 @@ const RideDetail = () => {
     </View>
   );
 };
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    marginTop: 50,
-  },
-  switchContainer: {
-    width: 400,
-    height: 50,
-    backgroundColor: '#fff',
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    flexDirection: 'row',
-    position: 'relative',
-  },
-  slider: {
-    position: 'absolute',
-    width: '50%',
-    height: '100%',
-    backgroundColor: '#0A2C7D',
-    borderRadius: 25,
-  },
-  option: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  text: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0A2C7D',
-  },
-  selectedText: {
-    color: '#fff',
-  },
-  step: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  textSteps: {
-    fontSize: 14,
-    color: '#333',
-  },
-  line: {
-    marginLeft: 9, // Align with icons
-  },
-  dash: {
-    width: responsiveScreenWidth(1), // Vertical Line
-    height: 100, // Adjust height
-    flexDirection: 'column', // For vertical alignment
-  },
-});
+
 export default RideDetail;

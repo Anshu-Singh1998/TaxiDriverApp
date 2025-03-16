@@ -4,49 +4,46 @@ import {
     StatusBar,
     Image,
     TouchableOpacity,
-    StyleSheet,
+    ChangePasswordStyleheet,
     TextInput,
   } from 'react-native';
   import * as React from 'react';
   import {useState} from 'react';
   import Left from '../../../Assets/Left.png';
-  import {
-    responsiveScreenHeight,
-    responsiveScreenWidth,
-    responsiveScreenFontSize,
-  } from 'react-native-responsive-dimensions';
   import {useNavigation} from '@react-navigation/native';
   import {Icon} from '@rneui/themed';
+  import ChangePasswordStyle from './ChangePasswordStyle';
   
   const ChangePassword = () => {
     const navigation = useNavigation();
     const [passwordVisible, setPasswordVisible] = useState(false);
   
     return (
-      <View style={styles.container}>
+      <View style={ChangePasswordStyle.container}>
         <StatusBar
           barStyle="light-content"
           backgroundColor="#0C3384"
           animated={true}
         />
         {/* Header */}
-        <View style={styles.header}>
+        <View style={ChangePasswordStyle.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Image source={Left} resizeMode="contain" style={styles.backIcon} />
+            <Image source={Left} resizeMode="contain" style={ChangePasswordStyle.backIcon} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Change Password</Text>
+          <Text style={ChangePasswordStyle.headerTitle}>Change Password</Text>
         </View>
   
         {/* Password Fields */}
-        <View style={styles.passwordWrapper}>
+        <View style={ChangePasswordStyle.passwordWrapper}>
           {['Old Password', 'New Password', 'Confirm Password'].map(
             (placeholder, index) => (
-              <View key={index} style={styles.passwordCell}>
-                <View style={styles.passwordContainer}>
+              <View key={index} style={ChangePasswordStyle.passwordCell}>
+                <View style={ChangePasswordStyle.passwordContainer}>
                   <TextInput
-                    style={styles.passwordInput}
+                    style={ChangePasswordStyle.passwordInput}
                     placeholder={placeholder}
                     secureTextEntry={!passwordVisible}
+                    placeholderTextColor="#000"
                   />
                   <TouchableOpacity
                     onPress={() => setPasswordVisible(!passwordVisible)}>
@@ -64,77 +61,14 @@ import {
         </View>
   
         {/* Save Button Fixed at Bottom */}
-        <TouchableOpacity style={styles.loginButton}>
-          <Text style={styles.loginButtonText}>Save</Text>
+        <TouchableOpacity style={ChangePasswordStyle.loginButton}>
+          <Text style={ChangePasswordStyle.loginButtonText}>Save</Text>
         </TouchableOpacity>
       </View>
     );
   };
   
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1, // Ensure full-screen usage
-      backgroundColor: '#fff',
-    },
-    header: {
-      height: 80,
-      width: '100%',
-      backgroundColor: '#0C3384',
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: responsiveScreenWidth(4),
-    },
-    backIcon: {
-      height: responsiveScreenHeight(6),
-      width: responsiveScreenWidth(12),
-    },
-    headerTitle: {
-      fontWeight: '700',
-      fontSize: responsiveScreenFontSize(4),
-      lineHeight: 40,
-      color: '#FFF',
-      marginLeft: responsiveScreenWidth(5),
-    },
-    passwordWrapper: {
-      flex: 1, // Take up remaining space
-    //   justifyContent: 'center',
-      alignItems: 'center',
-      paddingTop:responsiveScreenHeight(3)
-    },
-    passwordCell: {
-      marginBottom: responsiveScreenHeight(2),
-    },
-    passwordContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      width: '90%',
-      paddingHorizontal: responsiveScreenHeight(2),
-      borderColor: '#0C3384',
-      borderWidth: 1,
-      borderRadius: responsiveScreenWidth(4),
-      justifyContent: 'space-between',
-    },
-    passwordInput: {
-      flex: 1,
-      paddingVertical: responsiveScreenHeight(2),
-    },
-    loginButton: {
-      width: responsiveScreenWidth(90),
-      padding: responsiveScreenHeight(2),
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#0C3384',
-      borderRadius: responsiveScreenWidth(2),
-      position: 'absolute',
-      bottom: responsiveScreenHeight(3), // Ensures it's at the bottom
-      alignSelf: 'center',
-    },
-    loginButtonText: {
-      fontWeight: '700',
-      fontSize: responsiveScreenFontSize(2),
-      color: '#fff',
-    },
-  });
+
   
   export default ChangePassword;
   

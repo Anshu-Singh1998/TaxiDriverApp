@@ -29,6 +29,12 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+         release {
+        storeFile file('VNETTaxi.keystore') // Path to your release keystore
+        storePassword 'VNETTaxi'
+        keyAlias 'key0'
+        keyPassword 'VNETTaxi'
+    }
     }
     buildTypes {
         debug {
