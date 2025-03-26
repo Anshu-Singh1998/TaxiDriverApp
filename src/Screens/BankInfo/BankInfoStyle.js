@@ -36,7 +36,10 @@ const BankInfoStyle = StyleSheet.create({
     paddingTop: responsiveScreenHeight(3),
   },
   passwordCell: {
-    marginBottom: responsiveScreenHeight(2),
+    marginBottom: responsiveScreenHeight(1),
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: responsiveScreenHeight(2),
   },
   passwordContainer: {
     flexDirection: 'row',
@@ -49,8 +52,15 @@ const BankInfoStyle = StyleSheet.create({
     justifyContent: 'space-between',
   },
   passwordInput: {
-    flex: 1,
-    paddingVertical: responsiveScreenHeight(2),
+    width: responsiveScreenWidth(90),
+    paddingLeft: responsiveScreenHeight(2),
+    borderWidth: 1,
+    borderColor: '#000',
+    borderRadius: responsiveScreenWidth(2),
+    paddingHorizontal: 5,
+    // marginBottom: 5,
+    // flex: 1,
+    // paddingVertical: responsiveScreenHeight(2),
   },
   loginButton: {
     width: responsiveScreenWidth(90),
@@ -67,6 +77,31 @@ const BankInfoStyle = StyleSheet.create({
     fontWeight: '700',
     fontSize: responsiveScreenFontSize(2),
     color: '#fff',
+  },
+  card: {
+    borderWidth: 1,
+    borderColor: '#000',
+    width: responsiveScreenWidth(90),
+    backgroundColor: '#fff',
+    borderRadius: responsiveScreenWidth(4),
+    padding: responsiveScreenWidth(4),
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    // alignItems:"center"
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: responsiveScreenWidth(90),
+    backgroundColor: 'white',
+    padding: responsiveScreenHeight(4),
+    borderRadius: 10,
+    alignItems: 'center',
+    height:responsiveScreenHeight(60)
   },
 });
 export default BankInfoStyle;

@@ -5,7 +5,7 @@ import Modal from 'react-native-modal';
 const MapModal = () => {
   const [isModalVisible, setModalVisible] = useState(false);
 
-  const toggleModal = () => {
+  const toggle = () => {
     setModalVisible(!isModalVisible);
   };
 

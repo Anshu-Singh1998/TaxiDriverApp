@@ -11,6 +11,8 @@ export const loginUser = createAsyncThunk(
       const response = await Api.post('login', { email, password });
       console.log(response.data)
       await AsyncStorage.setItem('access_token', response.data.access_token);
+     
+      await AsyncStorage.setItem('email_id', response.data.user.email);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Something went wrong');

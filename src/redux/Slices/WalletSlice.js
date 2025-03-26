@@ -1,13 +1,26 @@
-// src/redux/slices/statusSlice.js
 import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Api from '../../Api/Api';
+
+// Helper function to get email from AsyncStorage
+const getEmailFromStorage = async () => {
+  try {
+    const email = await AsyncStorage.getItem('email_id');
+    return email;
+  } catch (error) {
+    console.error('Error retrieving email from AsyncStorage:', error);
+    return null;
+  }
+};
 
 // 🔄 Async Thunk: Fetch Wallet List based on Email
 export const walletList = createAsyncThunk(
   'wallet/walletList',
-  async (email, {rejectWithValue}) => {
+  async (_, {rejectWithValue}) => {
     try {
-      const response = await Api.post('wallet/list', {email: email});
+      const email = await getEmailFromStorage();
+      if (!email) throw new Error('Email not found');
+      const response = await Api.post('wallet/list', {email});
       console.log('Wallet List Response >>>>>', response.data);
       return response.data;
     } catch (error) {
@@ -15,11 +28,14 @@ export const walletList = createAsyncThunk(
     }
   },
 );
+
 export const walletListDetails = createAsyncThunk(
   'wallet/walletListDetails',
-  async (email, {rejectWithValue}) => {
+  async (_, {rejectWithValue}) => {
     try {
-      const response = await Api.post('wallet/detail', {email: email});
+      const email = await getEmailFromStorage();
+      if (!email) throw new Error('Email not found');
+      const response = await Api.post('wallet/detail', {email});
       console.log('Wallet List Details Response >>>>>', response.data);
       return response.data;
     } catch (error) {
@@ -30,12 +46,14 @@ export const walletListDetails = createAsyncThunk(
 
 export const walletTollSave = createAsyncThunk(
   'wallet/walletTollSave',
-  async (email, ride_id, toll_amount, {rejectWithValue}) => {
+  async ({ride_id, toll_amount}, {rejectWithValue}) => {
     try {
+      const email = await getEmailFromStorage();
+      if (!email) throw new Error('Email not found');
       const response = await Api.post('wallet/save', {
-        email: email,
-        ride_id: ride_id,
-        toll_amount: toll_amount,
+        email,
+        ride_id,
+        toll_amount,
       });
       console.log('Wallet Toll Request Save Response >>>>>', response.data);
       return response.data;
@@ -54,7 +72,7 @@ const walletSlice = createSlice({
     error: null, // Error message if any
   },
   reducers: {
-    // You can add synchronous reducers here if needed in future
+    // Add synchronous reducers here if needed in the future
   },
   extraReducers: builder => {
     builder
