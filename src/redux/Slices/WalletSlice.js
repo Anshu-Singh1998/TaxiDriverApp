@@ -1,28 +1,36 @@
 import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Api from '../../Api/Api';
+import axios from 'axios';
 
-// Helper function to get email from AsyncStorage
-const getEmailFromStorage = async () => {
-  try {
-    const email = await AsyncStorage.getItem('email_id');
-    return email;
-  } catch (error) {
-    console.error('Error retrieving email from AsyncStorage:', error);
-    return null;
-  }
-};
+// // Helper function to get email from AsyncStorage
+// const getEmailFromStorage = async () => {
+//   try {
+//     const email = await AsyncStorage.getItem('email_id');
+//     return email;
+//   } catch (error) {
+//     console.error('Error retrieving email from AsyncStorage:', error);
+//     return null;
+//   }
+// };
 
-// 🔄 Async Thunk: Fetch Wallet List based on Email
 export const walletList = createAsyncThunk(
   'wallet/walletList',
   async (_, {rejectWithValue}) => {
     try {
-      const email = await getEmailFromStorage();
-      if (!email) throw new Error('Email not found');
-      const response = await Api.post('wallet/list', {email});
-      console.log('Wallet List Response >>>>>', response.data);
-      return response.data;
+      const email = await AsyncStorage.getItem('email_id');
+      console.log('Email======>>>', email); // Get email from AsyncStorage
+
+      if (!email) {
+        return rejectWithValue('Email not found in storage');
+      }
+
+      const response = await axios.get(`https://bluetaxi.varmadns.com/demo/api/wallet/list?email=${email}`);
+
+      // console.log('API Full Response:', response);
+      // console.log('wallet List Data:', response.data);
+
+      return response.data; // Returns the full response (includes `message` and `data`)
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }
@@ -36,7 +44,7 @@ export const walletListDetails = createAsyncThunk(
       const email = await getEmailFromStorage();
       if (!email) throw new Error('Email not found');
       const response = await Api.post('wallet/detail', {email});
-      console.log('Wallet List Details Response >>>>>', response.data);
+      // console.log('Wallet List Details Response >>>>>', response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -55,7 +63,7 @@ export const walletTollSave = createAsyncThunk(
         ride_id,
         toll_amount,
       });
-      console.log('Wallet Toll Request Save Response >>>>>', response.data);
+      // console.log('Wallet Toll Request Save Response >>>>>', response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -81,9 +89,14 @@ const walletSlice = createSlice({
         state.error = null;
       })
       .addCase(walletList.fulfilled, (state, action) => {
-        state.data = action.payload;
+        // console.log('Full API Response in Redux:', action.payload);
+        state.data = Array.isArray(action.payload.data)
+          ? action.payload.data
+          : []; // Ensure it's an array
+        state.message = action.payload.message || 'Success';
         state.loading = false;
       })
+
       .addCase(walletList.rejected, (state, action) => {
         state.error = action.payload;
         state.loading = false;

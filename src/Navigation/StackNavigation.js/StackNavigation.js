@@ -14,7 +14,7 @@ import BankInfo from '../../Screens/BankInfo/BankInfo';
 import Home from '../../Screens/Home/Home';
 import TollRequest from '../../Screens/TollRequest/TollRequest';
 import LoginSplash from '../../Auth/LoginSplash';
-import SignIn from '../../Auth/SignIn';
+// import SignIn from '../../Auth/SignIn';
 import ChangePassword from '../../Screens/Settings/ChangePassword';
 import PrivacyPolicy from '../../Screens/Settings/PrivacyPolicy';
 import TermsAndConditions from '../../Screens/Settings/TermsAndConditions';
@@ -22,6 +22,8 @@ import DeleteAccount from '../../Screens/Settings/DeleteAccount';
 import Language from '../../Screens/Settings/Language';
 import AboutUs from '../../Screens/Settings/AboutUs';
 import Notification from '../../Screens/Notification/Notification';
+import DocumentViewer from '../../Screens/Document/DocumentViewer';
+import LoginScreen from '../../Screens/LocalUpcomingRide/LoginScreen';
 const Stack = createNativeStackNavigator();
 
 const StackNavigator = () => (
@@ -40,6 +42,11 @@ const StackNavigator = () => (
     <Stack.Screen
       name="Document"
       component={Document}
+      options={{header: () => null}}
+    />
+     <Stack.Screen
+      name="DocumentViewer"
+      component={DocumentViewer}
       options={{header: () => null}}
     />
     <Stack.Screen
@@ -103,11 +110,7 @@ const StackNavigator = () => (
       component={Login}
       options={{header: () => null}}
     />
-    <Stack.Screen
-      name="SignIn"
-      component={SignIn}
-      options={{header: () => null}}
-    />
+   
     <Stack.Screen
       name="ChangePassword"
       component={ChangePassword}
@@ -143,6 +146,7 @@ const StackNavigator = () => (
       component={Notification}
       options={{header: () => null}}
     />
+
   </Stack.Navigator>
 );
 export default StackNavigator;

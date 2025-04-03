@@ -25,7 +25,7 @@ const AboutUs = () => {
       />
       {/* Header */}
       <View style={AboutUsStyle.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity testID="back-button" onPress={() => navigation.goBack()}>
           <Image
             source={Left}
             resizeMode="contain"

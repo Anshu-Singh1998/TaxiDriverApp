@@ -1,6 +1,7 @@
 import {View, Text, StatusBar, Image} from 'react-native';
 import * as React from 'react';
 import {useEffect} from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoginImgSplash from '../../Assets/LoginImgSplash.png';
 import {
   responsiveScreenHeight,
@@ -12,10 +13,32 @@ const LoginSplash = () => {
   const navigation = useNavigation();
 
   useEffect(() => {
-    setTimeout(() => {
-      navigation.replace('SignIn');
-    }, 5000);
+    const checkLoginStatus = async () => {
+      try {
+        const userToken = await AsyncStorage.getItem('access_token');
+        console.log("Access Token====>>>",userToken) // Retrieve login token
+        setTimeout(() => {
+          if (userToken) {
+            navigation.navigate('DrawerNavigation', {
+              screen: 'Home',
+            });
+          } else {
+            navigation.navigate('DrawerNavigation', {
+              screen: 'Login',
+            });
+          }
+        }, 3000);
+      } catch (error) {
+        console.error('Error checking login status:', error);
+        navigation.navigate('DrawerNavigation', {
+          screen: 'Login',
+        });
+      }
+    };
+
+    checkLoginStatus();
   }, []);
+
   return (
     <View style={{flex: 1}}>
       <StatusBar

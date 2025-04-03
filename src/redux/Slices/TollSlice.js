@@ -1,16 +1,29 @@
 import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Api from '../../Api/Api';
+import axios from 'axios';
 
 export const tollRequestList = createAsyncThunk(
   'tollrequest/walletList',
-  async (email, id, {rejectWithValue}) => {
+  async (_, {rejectWithValue}) => {
     try {
-      const response = await Api.post('wallet/toll-requests/list', {
-        email: email,
-        id: id,
-      });
-      console.log('Wallet List Response >>>>>', response.data);
-      return response.data;
+      const email = await AsyncStorage.getItem('email_id');
+      const id = await AsyncStorage.getItem('driver_id');
+      console.log('Email======>>>', email);
+      console.log('Id======>>>', id); // Get email from AsyncStorage
+
+      if (!email) {
+        return rejectWithValue('Email not found in storage');
+      }
+
+      const response = await axios.get(
+        `https://bluetaxi.varmadns.com/demo/api/wallet/toll-requests/list?email=${email}&id=${id}`,
+      );
+
+      // console.log('toll API Full Response:', response);
+      // console.log('toll List Data:', response.data);
+
+      return response.data; // Returns the full response (includes `message` and `data`)
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }
@@ -25,7 +38,7 @@ export const tollRequestUpdate = createAsyncThunk(
         id: id,
       });
       console.log('Wallet List Response >>>>>', response.data);
-      return response.data;
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }
@@ -50,7 +63,7 @@ const tollRequestSlice = createSlice({
         state.error = null;
       })
       .addCase(tollRequestList.fulfilled, (state, action) => {
-        state.data = action.payload;
+        state.data = action.payload.data;
         state.loading = false;
       })
       .addCase(tollRequestList.rejected, (state, action) => {

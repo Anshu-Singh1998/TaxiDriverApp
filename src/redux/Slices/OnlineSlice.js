@@ -8,7 +8,7 @@ export const changeDriverStatus = createAsyncThunk(
   async (newStatus, { rejectWithValue }) => {
     try {
       const response = await Api.post('change-status', { status: newStatus });
-      console.log("Status=====>>>>",response.data.user.status)
+      // console.log("Status=====>>>>",response.data.user.status)
       return response.data.user.status; // returns 'online' or 'offline'
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);

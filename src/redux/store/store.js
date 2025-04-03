@@ -10,6 +10,10 @@ import settingsReducer from '../Slices/SettingsSlice';
 import tollReducer from '../Slices/TollSlice';
 import walletReducer from '../Slices/WalletSlice';
 import driverReducer from "../Slices/DriverListSlice"
+import outStationReducer from '../Slices/OutStationSlice';
+import localReducer from "../Slices/LocalRideSlice"
+import otpReducer from "../Slices/otpSlice"
+
 
 const store = configureStore({
   reducer: {
@@ -19,11 +23,14 @@ const store = configureStore({
     bank: bankReducer,
     contact: contactReducer,
     document: documentReducer,
-    rides: ridesReducer,
+    trips: ridesReducer,
     settings: settingsReducer,
     toll: tollReducer,
     wallet: walletReducer,
-    driver:driverReducer
+    driver:driverReducer,
+    outStation:outStationReducer,
+    local:localReducer,
+    otp:otpReducer
   },
 });
 

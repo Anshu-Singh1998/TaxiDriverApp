@@ -12,8 +12,9 @@ import {
   PermissionsAndroid,
   Platform,
   ScrollView,
-  Linking,
   TouchableWithoutFeedback,
+  Linking,
+
 } from 'react-native';
 import {
   CodeField,
@@ -43,10 +44,16 @@ import {useRoute} from '@react-navigation/native';
 import HomeStyle from './HomeStyle';
 import {useDispatch, useSelector} from 'react-redux';
 import {changeDriverStatus} from '../../redux/Slices/OnlineSlice';
+import {driverRideList} from '../../redux/Slices/DriverListSlice';
+import {postTrip} from '../../redux/Slices/ridesSlice';
+import {sendOtp} from '../../redux/Slices/otpSlice';
+import moment from 'moment';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CELL_COUNT = 4; // Number of OTP boxes
 
-const Home = ({navigation}) => {
+const Home = ({navigation, route}) => {
+  // console.log('aRoute====>>>>', route.params);
   const [modalVisible, setModalVisible] = useState(false);
   const [kmVisible, setKMVisible] = useState(false);
   const [mapModalVisible, setMapModalVisible] = useState(false);
@@ -58,14 +65,19 @@ const Home = ({navigation}) => {
   const [location, setLocation] = useState(null);
   const [tripStartModal, setTripStartModal] = useState(false);
   const [arrivedLocationModal, setArrivedLocationModal] = useState(false);
-  const [arrivedUpdateModal, setArrivedUpdateModal] = useState(false);
+  const [arrivedUpdateModal, setArrivedUpdateModal] = useState(null);
   const [isArrived, setIsArrived] = useState(false);
   const [startRideModal, setStartRideModal] = useState(false);
+  const [rideDetails, setRideDetails] = useState(null);
+  const [selectedRide, setSelectedRide] = useState(null);
+  const [tripId, setTripId] = useState(null);
   const lastScrollY = useRef(0);
-  const route = useRoute();
+  // const routeScreen = useRoute();
   const dispatch = useDispatch();
   const {status, loading} = useSelector(state => state.status);
-  console.log('Current Driver Status:', status);
+  const rides = useSelector(state => state.driver.data);
+  const tripScheduled = useSelector(state => state.trips);
+  const otp = useSelector(state => state.otp);
 
   const handleScroll = event => {
     const currentScrollY = event.nativeEvent.contentOffset.y;
@@ -102,6 +114,12 @@ const Home = ({navigation}) => {
       useNativeDriver: true,
     }).start(() => setMapModalVisible(false));
   };
+
+  useEffect(() => {
+    if (mapModalVisible) {
+      dispatch(driverRideList());
+    }
+  }, [mapModalVisible, dispatch]);
 
   const mapStyle = [
     {
@@ -150,10 +168,8 @@ const Home = ({navigation}) => {
           },
         );
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-          console.log('Location permission granted');
           return true;
         } else {
-          console.log('Location permission denied');
           Alert.alert(
             'Permission Denied',
             'Please enable location permissions in settings.',
@@ -177,7 +193,6 @@ const Home = ({navigation}) => {
       timeout: 6000,
     })
       .then(location => {
-        console.log(location);
         setLocation(location);
       })
       .catch(error => {
@@ -192,8 +207,11 @@ const Home = ({navigation}) => {
 
   useEffect(() => {
     if (route.params?.openModal) {
-      console.log('Modal Response', route.params?.openModal);
       setTripStartModal(true);
+    }
+    if (route.params?.rideDetails) {
+      // console.log('Ride Details (Before Setting):', route.params.rideDetails);
+      setRideDetails(route.params.rideDetails);
     }
   }, [route.params]);
 
@@ -226,6 +244,82 @@ const Home = ({navigation}) => {
     dispatch(changeDriverStatus(newStatus)).then(() => {
       setOnlineModalVisible(false); // close modal after API call
     });
+  };
+
+  const handleStartRideTrip = async () => {
+    if (!selectedRide) {
+      console.error('No ride selected');
+      return;
+    }
+
+    // Prepare trip details
+    const tripDetails = {
+      // booking_ref_no: selectedRide?.booking_ref_no || "900339",
+      booking_ref_no: '900069',
+      trip_type: selectedRide?.trip_type,
+      pickup: selectedRide?.start_address, // Fix mapping
+      drop: selectedRide?.end_address, // Fix mapping
+      pickup_time: selectedRide?.start_time || '2025-06-10 16:55:55', // Fix mapping
+      drop_time: selectedRide?.end_time || '2025-07-10 19:55:55', // Fix mapping
+      total_kilometers: selectedRide?.distance, // Fix mapping
+      tariff: selectedRide?.tariff || '0', // Check if exists
+      total_rupees: selectedRide?.total_amount, // Fix mapping
+      driver_id: selectedRide?.driver_id,
+      customer_name: selectedRide?.customer_name,
+      customer_phone: selectedRide?.customer_contact_phone, // Fix mapping
+      customer_email: selectedRide?.customer_email,
+      customer_address: selectedRide?.customer_address,
+    };
+
+    console.log('Posting trip details:', JSON.stringify(tripDetails, null, 2));
+
+    try {
+      const response = await dispatch(postTrip(tripDetails)).unwrap();
+      console.log('Response before otp====>>>', response);
+
+      const trip_id = response?.data?.id; // Get trip_id from response
+      if (trip_id) {
+        setTripId(trip_id);
+        console.log('TripId:', trip_id);
+
+        // Send OTP request
+        const otpResponse = await dispatch(sendOtp(trip_id)).unwrap();
+        const receivedOtp = otpResponse?.data?.otp; // Extract OTP from response
+        console.log('Recieve Otp=====>>>>', receivedOtp);
+        if (receivedOtp) {
+          setOtpValue(receivedOtp); // Set OTP in input field
+          setModalVisible(true); // Show OTP modal
+        } else {
+          console.error('OTP not received in response');
+        }
+      }
+      // dispatch(postTrip(tripDetails)); // Dispatch Redux action
+    } catch (error) {
+      console.error(
+        'Error while posting trip:',
+        error.response?.data || error.message,
+      );
+    }
+  };
+
+  const handleConfirmOtp = async () => {
+    if (!tripId || !otpValue) {
+      Alert.alert('Please enter OTP and ensure trip ID is available.');
+      return;
+    }
+
+    try {
+      const response = await dispatch(
+        verifyTripOtp({trip_id: tripId, otp: otpValue}),
+      ).unwrap();
+      console.log('OTP Verified:', response);
+      Alert.alert('OTP verified successfully!');
+      setModalVisible(false);
+      setKMVisible(true);
+    } catch (error) {
+      console.error('OTP Verification Failed:', error);
+      Alert.alert('Invalid OTP. Please try again.');
+    }
   };
 
   return (
@@ -363,7 +457,7 @@ const Home = ({navigation}) => {
               HomeStyle.MapModalContent,
               {
                 transform: [{translateY}],
-                height: responsiveScreenHeight(120),
+                height: responsiveScreenHeight(140),
               },
             ]}>
             <View style={{paddingBottom: responsiveScreenHeight(2)}}>
@@ -389,142 +483,150 @@ const Home = ({navigation}) => {
                 OutStation Ride
               </Text>
             </View>
-            <View
-              style={{
-                borderWidth: 1,
-                borderColor: 'grey',
-                borderRadius: responsiveScreenWidth(2),
-                padding: responsiveScreenWidth(3),
-              }}>
+
+            <View>
               <View
                 style={{
-                  paddingTop: responsiveScreenHeight(1),
+                  borderWidth: 1,
+                  borderColor: 'grey',
+                  borderRadius: responsiveScreenWidth(2),
+                  padding: responsiveScreenWidth(3),
                 }}>
-                <View>
+                {rides?.map((ride, index) => (
                   <View
+                    key={index}
                     style={{
-                      flexDirection: 'row',
-                      borderBottomColor: 'grey',
-                      borderBottomWidth: 1,
-                      paddingBottom: responsiveScreenHeight(1),
+                      paddingTop: responsiveScreenHeight(1),
                     }}>
+                    <View>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          borderBottomColor: 'grey',
+                          borderBottomWidth: 1,
+                          paddingBottom: responsiveScreenHeight(1),
+                        }}>
+                        {/* <View
+                              style={{
+                                height: responsiveScreenHeight(8),
+                                width: responsiveScreenHeight(8),
+                                borderRadius: responsiveScreenHeight(4),
+                                borderWidth: 6,
+                                borderColor: 'yellow',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                              }}> */}
+                        {/* <View
+                                style={{
+                                  height: responsiveScreenHeight(7),
+                                  width: responsiveScreenHeight(7),
+                                  borderRadius: responsiveScreenHeight(3.5),
+                                  borderWidth: 4,
+                                  borderColor: 'blue',
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                }}> */}
+                        <Image
+                          source={
+                            ride.driver_profile_image
+                              ? {uri: ride.driver_profile_image}
+                              : null // Replace with your actual default image path
+                          }
+                          style={{
+                            height: responsiveScreenHeight(8),
+                            width: responsiveScreenHeight(8),
+                            borderRadius: responsiveScreenHeight(4), // Optional: Makes it circular
+                          }}
+                          resizeMode="cover"
+                        />
+                        {/* </View> */}
+                        {/* </View> */}
+                        <View style={{paddingLeft: responsiveScreenWidth(3)}}>
+                          <Text
+                            style={{
+                              fontSize: responsiveScreenFontSize(2),
+                              fontWeight: '700',
+                              color: '#000',
+                              lineHeight: 40,
+                            }}>
+                            {ride.customer_name}
+                          </Text>
+                          <Text
+                            style={{
+                              fontSize: responsiveScreenFontSize(2),
+                              fontWeight: '500',
+                              color: '#000',
+                              lineHeight: 30,
+                            }}>
+                            {ride.customer_email}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
                     <View
                       style={{
-                        height: responsiveScreenHeight(8),
-                        width: responsiveScreenHeight(8),
-                        borderRadius: responsiveScreenHeight(4),
-                        borderWidth: 6,
-                        borderColor: 'yellow',
-                        justifyContent: 'center',
-                        alignItems: 'center',
+                        paddingTop: responsiveScreenHeight(1),
+                        borderBottomColor: 'grey',
+                        borderBottomWidth: 1,
+                        paddingBottom: responsiveScreenHeight(1),
                       }}>
                       <View
                         style={{
-                          height: responsiveScreenHeight(7),
-                          width: responsiveScreenHeight(7),
-                          borderRadius: responsiveScreenHeight(3.5),
-                          borderWidth: 4,
-                          borderColor: 'blue',
-                          justifyContent: 'center',
+                          justifyContent: 'space-between',
                           alignItems: 'center',
+                          flexDirection: 'row',
                         }}>
-                        <Text
+                        <View style={HomeStyle.step}>
+                          <Image
+                            source={Compass}
+                            style={{
+                              height: responsiveScreenHeight(4),
+                              width: responsiveScreenWidth(7),
+                            }}
+                            resizeMode="contain"
+                          />
+                          <Text style={HomeStyle.textSteps}>
+                            {ride.start_address}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={{paddingLeft: responsiveScreenWidth(3)}}>
+                        <View
                           style={{
-                            fontSize: responsiveScreenFontSize(3),
-                            fontWeight: '600',
-                            color: 'blue',
-                            lineHeight: 40,
-                          }}>
-                          Bt
-                        </Text>
+                            width: responsiveScreenWidth(1),
+                            height: responsiveScreenHeight(4),
+                            borderStyle: 'dashed',
+                            borderWidth: 1,
+                            borderColor: '#0C3384',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}></View>
+                      </View>
+
+                      {/* End Location */}
+                      <View
+                        style={{
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          flexDirection: 'row',
+                        }}>
+                        <View style={HomeStyle.step}>
+                          <Image
+                            source={Destination}
+                            style={{
+                              height: responsiveScreenHeight(4),
+                              width: responsiveScreenWidth(7),
+                            }}
+                            resizeMode="contain"
+                          />
+                          <Text style={HomeStyle.textSteps}>
+                            {ride.end_address}
+                          </Text>
+                        </View>
                       </View>
                     </View>
-                    <View>
-                      <Text
-                        style={{
-                          fontSize: responsiveScreenFontSize(2),
-                          fontWeight: '700',
-                          color: '#000',
-                          lineHeight: 40,
-                        }}>
-                        KANNAN RAJ
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: responsiveScreenFontSize(2),
-                          fontWeight: '500',
-                          color: '#000',
-                          lineHeight: 30,
-                        }}>
-                        kannan@123
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-                <View
-                  style={{
-                    paddingTop: responsiveScreenHeight(1),
-                    borderBottomColor: 'grey',
-                    borderBottomWidth: 1,
-                    paddingBottom: responsiveScreenHeight(1),
-                  }}>
-                  <View
-                    style={{
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      flexDirection: 'row',
-                    }}>
-                    <View style={HomeStyle.step}>
-                      <Image
-                        source={Compass}
-                        style={{
-                          height: responsiveScreenHeight(4),
-                          width: responsiveScreenWidth(7),
-                        }}
-                        resizeMode="contain"
-                      />
-                      <Text style={HomeStyle.textSteps}>
-                        Tiruppur, Tamil Nadu, India
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={{paddingLeft: responsiveScreenWidth(3)}}>
-                    <View
-                      style={{
-                        width: responsiveScreenWidth(1),
-                        height: responsiveScreenHeight(4),
-                        borderStyle: 'dashed',
-                        borderWidth: 1,
-                        borderColor: '#0C3384',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}></View>
-                  </View>
-
-                  {/* End Location */}
-                  <View
-                    style={{
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      flexDirection: 'row',
-                    }}>
-                    <View style={HomeStyle.step}>
-                      <Image
-                        source={Destination}
-                        style={{
-                          height: responsiveScreenHeight(4),
-                          width: responsiveScreenWidth(7),
-                        }}
-                        resizeMode="contain"
-                      />
-                      <Text style={HomeStyle.textSteps}>
-                        Salem, Tamil Nadu, India
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-                {/* <View
+                    {/* <View
                 style={{
                   justifyContent: 'flex-end',
                   alignItems: 'flex-end',
@@ -541,131 +643,143 @@ const Home = ({navigation}) => {
                   />
                 </TouchableOpacity>
               </View> */}
+                    <View
+                      style={{
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        paddingTop: responsiveScreenHeight(2),
+                        paddingBottom: responsiveScreenHeight(1),
+                      }}>
+                      <TouchableOpacity
+                        onPress={() => setAcceptModalVisible(true)}
+                        style={{
+                          width: responsiveScreenWidth(90),
+                          padding: responsiveScreenHeight(2),
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          backgroundColor: '#0C3384',
+                          borderRadius: responsiveScreenWidth(4),
+                        }}>
+                        <Text
+                          style={{
+                            fontWeight: '700',
+                            fontSize: responsiveScreenFontSize(2),
+                            lineHeight: 36.14,
+                            color: '#fff',
+                          }}>
+                          Accept
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+              {rides?.map((ride, index) => (
                 <View
-                  style={{
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    paddingTop: responsiveScreenHeight(2),
-                    paddingBottom: responsiveScreenHeight(1),
-                  }}>
-                  <TouchableOpacity
-                    onPress={() => setAcceptModalVisible(true)}
+                  style={{paddingTop: responsiveScreenHeight(1)}}
+                  key={index}>
+                  <View
                     style={{
-                      width: responsiveScreenWidth(90),
-                      padding: responsiveScreenHeight(2),
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      backgroundColor: '#0C3384',
-                      borderRadius: responsiveScreenWidth(4),
+                      borderWidth: 1,
+                      borderColor: 'grey',
+                      borderRadius: responsiveScreenWidth(2),
+                      padding: responsiveScreenWidth(1),
+                      width: responsiveScreenWidth(96),
                     }}>
-                    <Text
+                    <View
                       style={{
-                        fontWeight: '700',
-                        fontSize: responsiveScreenFontSize(2),
-                        lineHeight: 36.14,
-                        color: '#fff',
+                        padding: responsiveScreenHeight(2),
                       }}>
-                      Accept
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-            <View style={{paddingTop: responsiveScreenHeight(1)}}>
-              <View
-                style={{
-                  borderWidth: 1,
-                  borderColor: 'grey',
-                  borderRadius: responsiveScreenWidth(2),
-                  padding: responsiveScreenWidth(1),
-                  width: responsiveScreenWidth(96),
-                }}>
-                <View
-                  style={{
-                    padding: responsiveScreenHeight(2),
-                  }}>
-                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <Text
-                      style={{
-                        fontSize: responsiveScreenFontSize(2),
-                        fontWeight: '600',
-                        color: '#000',
-                        lineHeight: 40,
-                      }}>
-                      Start Date:
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: responsiveScreenFontSize(2),
-                        fontWeight: '600',
-                        color: '#0C3384',
-                        lineHeight: 40,
-                      }}>
-                      20 Dec 2024 at 01:59PM
-                    </Text>
-                  </View>
-                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <Text
-                      style={{
-                        fontSize: responsiveScreenFontSize(2),
-                        fontWeight: '600',
-                        color: '#000',
-                        lineHeight: 40,
-                      }}>
-                      Estimated Total Amount:
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: responsiveScreenFontSize(2),
-                        fontWeight: '600',
-                        color: '#0C3384',
-                        lineHeight: 40,
-                      }}>
-                      2892.99
-                    </Text>
-                  </View>
-                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <Text
-                      style={{
-                        fontSize: responsiveScreenFontSize(2),
-                        fontWeight: '600',
-                        color: '#000',
-                        lineHeight: 40,
-                      }}>
-                      Payment Mode:
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: responsiveScreenFontSize(2),
-                        fontWeight: '600',
-                        color: '#0C3384',
-                        lineHeight: 40,
-                      }}>
-                      Cash
-                    </Text>
-                  </View>
-                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <Text
-                      style={{
-                        fontSize: responsiveScreenFontSize(2),
-                        fontWeight: '600',
-                        color: '#000',
-                        lineHeight: 40,
-                      }}>
-                      Booking Type:
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: responsiveScreenFontSize(2),
-                        fontWeight: '600',
-                        color: '#0C3384',
-                        lineHeight: 40,
-                      }}>
-                      Advance
-                    </Text>
+                      <View
+                        style={{flexDirection: 'row', alignItems: 'center'}}>
+                        <Text
+                          style={{
+                            fontSize: responsiveScreenFontSize(2),
+                            fontWeight: '600',
+                            color: '#000',
+                            lineHeight: 40,
+                          }}>
+                          Start Date:
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: responsiveScreenFontSize(2),
+                            fontWeight: '600',
+                            color: '#0C3384',
+                            lineHeight: 40,
+                          }}>
+                          {moment(ride.datetime).format(
+                            'DD MMM YYYY [at] hh:mmA',
+                          )}
+                        </Text>
+                      </View>
+                      <View
+                        style={{flexDirection: 'row', alignItems: 'center'}}>
+                        <Text
+                          style={{
+                            fontSize: responsiveScreenFontSize(2),
+                            fontWeight: '600',
+                            color: '#000',
+                            lineHeight: 40,
+                          }}>
+                          Estimated Total Amount:
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: responsiveScreenFontSize(2),
+                            fontWeight: '600',
+                            color: '#0C3384',
+                            lineHeight: 40,
+                          }}>
+                          {ride.base_fare}
+                        </Text>
+                      </View>
+                      <View
+                        style={{flexDirection: 'row', alignItems: 'center'}}>
+                        <Text
+                          style={{
+                            fontSize: responsiveScreenFontSize(2),
+                            fontWeight: '600',
+                            color: '#000',
+                            lineHeight: 40,
+                          }}>
+                          Payment Mode:
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: responsiveScreenFontSize(2),
+                            fontWeight: '600',
+                            color: '#0C3384',
+                            lineHeight: 40,
+                          }}>
+                          {ride.payment_type}
+                        </Text>
+                      </View>
+                      <View
+                        style={{flexDirection: 'row', alignItems: 'center'}}>
+                        <Text
+                          style={{
+                            fontSize: responsiveScreenFontSize(2),
+                            fontWeight: '600',
+                            color: '#000',
+                            lineHeight: 40,
+                          }}>
+                          Booking Type:
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: responsiveScreenFontSize(2),
+                            fontWeight: '600',
+                            color: '#0C3384',
+                            lineHeight: 40,
+                          }}>
+                          {ride.trip_type}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
                 </View>
-              </View>
+              ))}
             </View>
             {/* </ScrollView> */}
           </Animated.View>
@@ -754,233 +868,216 @@ const Home = ({navigation}) => {
                 backgroundColor: '#0C3384',
                 borderRadius: responsiveScreenWidth(4),
               }}></TouchableOpacity>
-            <View
-              style={{
-                paddingTop: responsiveScreenHeight(4),
-              }}>
+            {rides?.map((ride, index) => (
+              // console.log('Ride before passing====>>>', ride),
               <View
                 style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
+                  paddingTop: responsiveScreenHeight(4),
                 }}>
                 <View
                   style={{
                     flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                   }}>
                   <View
                     style={{
-                      height: responsiveScreenHeight(8),
-                      width: responsiveScreenHeight(8),
-                      borderRadius: responsiveScreenHeight(4),
-                      borderWidth: 6,
-                      borderColor: 'yellow',
-                      justifyContent: 'center',
-                      alignItems: 'center',
+                      flexDirection: 'row',
                     }}>
                     <View
                       style={{
-                        height: responsiveScreenHeight(7),
-                        width: responsiveScreenHeight(7),
-                        borderRadius: responsiveScreenHeight(3.5),
-                        borderWidth: 4,
-                        borderColor: 'blue',
+                        height: responsiveScreenHeight(8),
+                        width: responsiveScreenHeight(8),
+                        borderRadius: responsiveScreenHeight(4),
+                        borderWidth: 6,
+                        borderColor: 'yellow',
                         justifyContent: 'center',
                         alignItems: 'center',
                       }}>
-                      <Text
+                      <View
                         style={{
-                          fontSize: responsiveScreenFontSize(3),
-                          fontWeight: '600',
-                          color: 'blue',
-                          lineHeight: 40,
+                          height: responsiveScreenHeight(7),
+                          width: responsiveScreenHeight(7),
+                          borderRadius: responsiveScreenHeight(3.5),
+                          borderWidth: 4,
+                          borderColor: 'blue',
+                          justifyContent: 'center',
+                          alignItems: 'center',
                         }}>
-                        Bt
-                      </Text>
+                        <Text
+                          style={{
+                            fontSize: responsiveScreenFontSize(3),
+                            fontWeight: '600',
+                            color: 'blue',
+                            lineHeight: 40,
+                          }}>
+                          Bt
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                  <View>
-                    <Text
-                      style={{
-                        fontSize: responsiveScreenFontSize(2),
-                        fontWeight: '700',
-                        color: '#000',
-                        lineHeight: 40,
-                      }}>
-                      KANNAN RAJ
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: responsiveScreenFontSize(2),
-                        fontWeight: '500',
-                        color: '#000',
-                        lineHeight: 30,
-                      }}>
-                      kannan@123
-                    </Text>
-                  </View>
-                </View>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                  }}>
-                  <View>
-                    <View
-                      style={{
-                        height: responsiveScreenHeight(4),
-                        width: responsiveScreenHeight(6),
-                        borderRadius: responsiveScreenHeight(1),
-                        borderWidth: 1,
-                        borderColor: 'blue',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}>
+                    <View>
                       <Text
                         style={{
                           fontSize: responsiveScreenFontSize(2),
                           fontWeight: '700',
                           color: '#000',
-                          lineHeight: 20,
+                          lineHeight: 40,
                         }}>
-                        SOS
+                        {ride.customer_name}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: responsiveScreenFontSize(2),
+                          fontWeight: '500',
+                          color: '#000',
+                          lineHeight: 30,
+                        }}>
+                        {ride.customer_email}
                       </Text>
                     </View>
                   </View>
                   <View
                     style={{
-                      paddingLeft: responsiveScreenWidth(2),
-                      paddingRight: responsiveScreenWidth(2),
+                      flexDirection: 'row',
                     }}>
-                    <View
-                      style={{
-                        height: responsiveScreenHeight(4),
-                        width: responsiveScreenHeight(6),
-                        borderRadius: responsiveScreenHeight(1),
-                        borderWidth: 1,
-                        borderColor: 'blue',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}>
-                      <Image
-                        source={PhoneCall}
-                        style={{
-                          height: responsiveScreenHeight(5),
-                          width: responsiveScreenWidth(3),
-                        }}
-                        resizeMode="contain"
-                      />
-                    </View>
-                  </View>
-                  <View>
-                    <View
-                      style={{
-                        height: responsiveScreenHeight(4),
-                        width: responsiveScreenHeight(6),
-                        borderRadius: responsiveScreenHeight(1),
-                        borderWidth: 1,
-                        borderColor: 'blue',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}>
-                      <Image
-                        source={SMSIcon}
+                    <View>
+                      <View
                         style={{
                           height: responsiveScreenHeight(4),
-                          width: responsiveScreenWidth(7),
-                        }}
-                        resizeMode="contain"
-                      />
+                          width: responsiveScreenHeight(6),
+                          borderRadius: responsiveScreenHeight(1),
+                          borderWidth: 1,
+                          borderColor: 'blue',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}>
+                        <Text
+                          style={{
+                            fontSize: responsiveScreenFontSize(2),
+                            fontWeight: '700',
+                            color: '#000',
+                            lineHeight: 20,
+                          }}>
+                          SOS
+                        </Text>
+                      </View>
+                    </View>
+                    <View
+                      style={{
+                        paddingLeft: responsiveScreenWidth(2),
+                        paddingRight: responsiveScreenWidth(2),
+                      }}>
+                      <TouchableOpacity>
+                        <View
+                          style={{
+                            height: responsiveScreenHeight(4),
+                            width: responsiveScreenHeight(6),
+                            borderRadius: responsiveScreenHeight(1),
+                            borderWidth: 1,
+                            borderColor: 'blue',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}>
+                          <Image
+                            source={PhoneCall}
+                            style={{
+                              height: responsiveScreenHeight(5),
+                              width: responsiveScreenWidth(3),
+                            }}
+                            resizeMode="contain"
+                          />
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                    <View>
+                      <TouchableOpacity>
+                        <View
+                          style={{
+                            height: responsiveScreenHeight(4),
+                            width: responsiveScreenHeight(6),
+                            borderRadius: responsiveScreenHeight(1),
+                            borderWidth: 1,
+                            borderColor: 'blue',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}>
+                          <Image
+                            source={SMSIcon}
+                            style={{
+                              height: responsiveScreenHeight(4),
+                              width: responsiveScreenWidth(7),
+                            }}
+                            resizeMode="contain"
+                          />
+                        </View>
+                      </TouchableOpacity>
                     </View>
                   </View>
                 </View>
-              </View>
-              <View style={{paddingTop: responsiveScreenHeight(3)}}>
-                <View
-                  style={{
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    flexDirection: 'row',
-                  }}>
-                  <View style={HomeStyle.step}>
-                    <Image
-                      source={Compass}
-                      style={{
-                        height: responsiveScreenHeight(4),
-                        width: responsiveScreenWidth(7),
-                      }}
-                      resizeMode="contain"
-                    />
-                    <Text style={HomeStyle.textSteps}>
-                      Tiruppur, Tamil Nadu, India
-                    </Text>
-                  </View>
-                  <View>
-                    <TouchableOpacity
-                      style={{
-                        height: responsiveScreenHeight(4),
-                        width: responsiveScreenHeight(4),
-                        borderRadius: responsiveScreenHeight(1),
-                        borderWidth: 1,
-                        borderColor: 'black',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}>
-                      <Image
-                        source={Destination}
-                        style={{
-                          height: responsiveScreenHeight(4),
-                          width: responsiveScreenWidth(7),
-                        }}
-                        resizeMode="contain"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={{paddingLeft: responsiveScreenWidth(3)}}>
+                <View style={{paddingTop: responsiveScreenHeight(3)}}>
                   <View
                     style={{
-                      width: responsiveScreenWidth(1),
-                      height: responsiveScreenHeight(4),
-                      borderStyle: 'dashed',
-                      borderWidth: 1,
-                      borderColor: '#0C3384',
-                      justifyContent: 'center',
+                      justifyContent: 'space-between',
                       alignItems: 'center',
-                    }}></View>
-                </View>
-
-                {/* End Location */}
-                <View
-                  style={{
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    flexDirection: 'row',
-                  }}>
-                  <View style={HomeStyle.step}>
-                    <Image
-                      source={Destination}
-                      style={{
-                        height: responsiveScreenHeight(4),
-                        width: responsiveScreenWidth(7),
-                      }}
-                      resizeMode="contain"
-                    />
-                    <Text style={HomeStyle.textSteps}>
-                      Salem, Tamil Nadu, India
-                    </Text>
+                      flexDirection: 'row',
+                    }}>
+                    <View style={HomeStyle.step}>
+                      <Image
+                        source={Compass}
+                        style={{
+                          height: responsiveScreenHeight(4),
+                          width: responsiveScreenWidth(7),
+                        }}
+                        resizeMode="contain"
+                      />
+                      <Text style={HomeStyle.textSteps}>
+                        {ride.start_address}
+                      </Text>
+                    </View>
+                    <View>
+                      <TouchableOpacity
+                        style={{
+                          height: responsiveScreenHeight(4),
+                          width: responsiveScreenHeight(4),
+                          borderRadius: responsiveScreenHeight(1),
+                          borderWidth: 1,
+                          borderColor: 'black',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}>
+                        <Image
+                          source={Destination}
+                          style={{
+                            height: responsiveScreenHeight(4),
+                            width: responsiveScreenWidth(7),
+                          }}
+                          resizeMode="contain"
+                        />
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                  <View>
-                    <TouchableOpacity
+
+                  <View style={{paddingLeft: responsiveScreenWidth(3)}}>
+                    <View
                       style={{
+                        width: responsiveScreenWidth(1),
                         height: responsiveScreenHeight(4),
-                        width: responsiveScreenHeight(4),
-                        borderRadius: responsiveScreenHeight(1),
+                        borderStyle: 'dashed',
                         borderWidth: 1,
-                        borderColor: 'black',
+                        borderColor: '#0C3384',
                         justifyContent: 'center',
                         alignItems: 'center',
-                      }}>
+                      }}></View>
+                  </View>
+
+                  {/* End Location */}
+                  <View
+                    style={{
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexDirection: 'row',
+                    }}>
+                    <View style={HomeStyle.step}>
                       <Image
                         source={Destination}
                         style={{
@@ -989,70 +1086,92 @@ const Home = ({navigation}) => {
                         }}
                         resizeMode="contain"
                       />
-                    </TouchableOpacity>
+                      <Text style={HomeStyle.textSteps}>
+                        {ride.end_address}
+                      </Text>
+                    </View>
+                    <View>
+                      <TouchableOpacity
+                        style={{
+                          height: responsiveScreenHeight(4),
+                          width: responsiveScreenHeight(4),
+                          borderRadius: responsiveScreenHeight(1),
+                          borderWidth: 1,
+                          borderColor: 'black',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}>
+                        <Image
+                          source={Destination}
+                          style={{
+                            height: responsiveScreenHeight(4),
+                            width: responsiveScreenWidth(7),
+                          }}
+                          resizeMode="contain"
+                        />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
-              </View>
-              <View
-                style={{
-                  justifyContent: 'flex-end',
-                  alignItems: 'flex-end',
-                  paddingTop: responsiveScreenHeight(3),
-                }}>
-                <TouchableOpacity>
-                  <Image
-                    source={MapsCenter}
-                    style={{
-                      height: responsiveScreenHeight(4),
-                      width: responsiveScreenWidth(7),
-                    }}
-                    resizeMode="contain"
-                  />
-                </TouchableOpacity>
-              </View>
-              <View
-                style={{
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  paddingTop: responsiveScreenHeight(6),
-                  paddingBottom: responsiveScreenHeight(10),
-                }}>
-                <TouchableOpacity
-                  onPress={() => {
-                    if (!isArrived) {
-                      setArrivedLocationModal(true);
-                    } else {
-                      setArrivedUpdateModal(true);
-                    }
-                  }}
+                <View
                   style={{
-                    width: responsiveScreenWidth(90),
-                    padding: responsiveScreenHeight(2),
+                    justifyContent: 'flex-end',
+                    alignItems: 'flex-end',
+                    paddingTop: responsiveScreenHeight(3),
+                  }}>
+                  <TouchableOpacity>
+                    <Image
+                      source={MapsCenter}
+                      style={{
+                        height: responsiveScreenHeight(4),
+                        width: responsiveScreenWidth(7),
+                      }}
+                      resizeMode="contain"
+                    />
+                  </TouchableOpacity>
+                </View>
+                <View
+                  style={{
                     justifyContent: 'center',
                     alignItems: 'center',
-                    backgroundColor: '#0C3384',
-                    borderRadius: responsiveScreenWidth(4),
+                    paddingTop: responsiveScreenHeight(6),
+                    paddingBottom: responsiveScreenHeight(10),
                   }}>
-                  <Text
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (!isArrived) {
+                        setArrivedLocationModal(true);
+                      } else {
+                        setArrivedUpdateModal(prev => {
+                          if (!prev) return ride; // Only update if it’s not already set
+                          return prev;
+                        });
+                      }
+                    }}
                     style={{
-                      fontWeight: '700',
-                      fontSize: responsiveScreenFontSize(2),
-                      lineHeight: 36.14,
-                      color: '#fff',
+                      width: responsiveScreenWidth(90),
+                      padding: responsiveScreenHeight(2),
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      backgroundColor: '#0C3384',
+                      borderRadius: responsiveScreenWidth(4),
                     }}>
-                    {isArrived ? 'Arrived' : 'Arriving'}
-                  </Text>
-                </TouchableOpacity>
+                    <Text
+                      style={{
+                        fontWeight: '700',
+                        fontSize: responsiveScreenFontSize(2),
+                        lineHeight: 36.14,
+                        color: '#fff',
+                      }}>
+                      {isArrived ? 'Arrived' : 'Arriving'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-
-            <TouchableOpacity
-              style={HomeStyle.MapCloseButton}
-              onPress={closeModal}>
-              <Text style={HomeStyle.MapCloseButtonText}>Close</Text>
-            </TouchableOpacity>
+            ))}
           </Animated.View>
         </View>
+
         <Modal visible={arrivedLocationModal} transparent animationType="slide">
           <View style={HomeStyle.modalContainer}>
             <View
@@ -1120,7 +1239,8 @@ const Home = ({navigation}) => {
                     },
                   ]}
                   onPress={() => {
-                    setIsArrived(true); // Update to "Arrived"
+                    setIsArrived(true);
+                    // Update to "Arrived"
                     setArrivedLocationModal(false);
                     // Close this modal
                   }}>
@@ -1130,7 +1250,8 @@ const Home = ({navigation}) => {
             </View>
           </View>
         </Modal>
-        <Modal visible={arrivedUpdateModal} transparent animationType="slide">
+
+        <Modal visible={!!arrivedUpdateModal} transparent animationType="slide">
           <View style={HomeStyle.modalContainer}>
             <View
               style={[HomeStyle.modalContent, {backgroundColor: '#0C3384'}]}>
@@ -1197,7 +1318,12 @@ const Home = ({navigation}) => {
                     },
                   ]}
                   onPress={() => {
-                    setStartRideModal(true);
+                    setSelectedRide(arrivedUpdateModal); // Pass ride data
+
+                    // setArrivedUpdateModal(null);
+                    setTimeout(() => {
+                      setStartRideModal(true); // Open modal after state updates
+                    }, 100);
                   }}>
                   <Text style={HomeStyle.buttonText}>Yes</Text>
                 </TouchableOpacity>
@@ -1211,6 +1337,7 @@ const Home = ({navigation}) => {
             // animationType="none"
             // onRequestClose={closeModal} // Handles back button on Android
           >
+            {/* {console.log('SelectedRide=====>>>>', selectedRide)} */}
             <View style={HomeStyle.modalContainer}>
               <Animated.View
                 style={[
@@ -1225,233 +1352,225 @@ const Home = ({navigation}) => {
                     backgroundColor: '#0C3384',
                     borderRadius: responsiveScreenWidth(4),
                   }}></TouchableOpacity>
-                <View
-                  style={{
-                    paddingTop: responsiveScreenHeight(4),
-                  }}>
+                {selectedRide && (
                   <View
                     style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
+                      paddingTop: responsiveScreenHeight(4),
                     }}>
                     <View
                       style={{
                         flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
                       }}>
                       <View
                         style={{
-                          height: responsiveScreenHeight(8),
-                          width: responsiveScreenHeight(8),
-                          borderRadius: responsiveScreenHeight(4),
-                          borderWidth: 6,
-                          borderColor: 'yellow',
-                          justifyContent: 'center',
-                          alignItems: 'center',
+                          flexDirection: 'row',
                         }}>
                         <View
                           style={{
-                            height: responsiveScreenHeight(7),
-                            width: responsiveScreenHeight(7),
-                            borderRadius: responsiveScreenHeight(3.5),
-                            borderWidth: 4,
-                            borderColor: 'blue',
+                            height: responsiveScreenHeight(8),
+                            width: responsiveScreenHeight(8),
+                            borderRadius: responsiveScreenHeight(4),
+                            borderWidth: 6,
+                            borderColor: 'yellow',
                             justifyContent: 'center',
                             alignItems: 'center',
                           }}>
-                          <Text
+                          <View
                             style={{
-                              fontSize: responsiveScreenFontSize(3),
-                              fontWeight: '600',
-                              color: 'blue',
-                              lineHeight: 40,
+                              height: responsiveScreenHeight(7),
+                              width: responsiveScreenHeight(7),
+                              borderRadius: responsiveScreenHeight(3.5),
+                              borderWidth: 4,
+                              borderColor: 'blue',
+                              justifyContent: 'center',
+                              alignItems: 'center',
                             }}>
-                            Bt
-                          </Text>
+                            <Text
+                              style={{
+                                fontSize: responsiveScreenFontSize(3),
+                                fontWeight: '600',
+                                color: 'blue',
+                                lineHeight: 40,
+                              }}>
+                              Bt
+                            </Text>
+                          </View>
                         </View>
-                      </View>
-                      <View>
-                        <Text
-                          style={{
-                            fontSize: responsiveScreenFontSize(2),
-                            fontWeight: '700',
-                            color: '#000',
-                            lineHeight: 40,
-                          }}>
-                          KANNAN RAJ
-                        </Text>
-                        <Text
-                          style={{
-                            fontSize: responsiveScreenFontSize(2),
-                            fontWeight: '500',
-                            color: '#000',
-                            lineHeight: 30,
-                          }}>
-                          kannan@123
-                        </Text>
-                      </View>
-                    </View>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                      }}>
-                      <View>
-                        <View
-                          style={{
-                            height: responsiveScreenHeight(4),
-                            width: responsiveScreenHeight(6),
-                            borderRadius: responsiveScreenHeight(1),
-                            borderWidth: 1,
-                            borderColor: 'blue',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                          }}>
+                        <View>
                           <Text
                             style={{
                               fontSize: responsiveScreenFontSize(2),
                               fontWeight: '700',
                               color: '#000',
-                              lineHeight: 20,
+                              lineHeight: 40,
                             }}>
-                            SOS
+                            {selectedRide.customer_name}
+                          </Text>
+                          <Text
+                            style={{
+                              fontSize: responsiveScreenFontSize(2),
+                              fontWeight: '500',
+                              color: '#000',
+                              lineHeight: 30,
+                            }}>
+                            {selectedRide.customer_email}
                           </Text>
                         </View>
                       </View>
                       <View
                         style={{
-                          paddingLeft: responsiveScreenWidth(2),
-                          paddingRight: responsiveScreenWidth(2),
+                          flexDirection: 'row',
                         }}>
-                        <View
-                          style={{
-                            height: responsiveScreenHeight(4),
-                            width: responsiveScreenHeight(6),
-                            borderRadius: responsiveScreenHeight(1),
-                            borderWidth: 1,
-                            borderColor: 'blue',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                          }}>
-                          <Image
-                            source={PhoneCall}
-                            style={{
-                              height: responsiveScreenHeight(5),
-                              width: responsiveScreenWidth(3),
-                            }}
-                            resizeMode="contain"
-                          />
-                        </View>
-                      </View>
-                      <View>
-                        <View
-                          style={{
-                            height: responsiveScreenHeight(4),
-                            width: responsiveScreenHeight(6),
-                            borderRadius: responsiveScreenHeight(1),
-                            borderWidth: 1,
-                            borderColor: 'blue',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                          }}>
-                          <Image
-                            source={SMSIcon}
+                        <View>
+                          <View
                             style={{
                               height: responsiveScreenHeight(4),
-                              width: responsiveScreenWidth(7),
-                            }}
-                            resizeMode="contain"
-                          />
+                              width: responsiveScreenHeight(6),
+                              borderRadius: responsiveScreenHeight(1),
+                              borderWidth: 1,
+                              borderColor: 'blue',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            }}>
+                            <Text
+                              style={{
+                                fontSize: responsiveScreenFontSize(2),
+                                fontWeight: '700',
+                                color: '#000',
+                                lineHeight: 20,
+                              }}>
+                              SOS
+                            </Text>
+                          </View>
+                        </View>
+                        <View
+                          style={{
+                            paddingLeft: responsiveScreenWidth(2),
+                            paddingRight: responsiveScreenWidth(2),
+                          }}>
+                          <TouchableOpacity
+                            onPress={() =>
+                              Linking.openURL(
+                                `tel:${selectedRide.customer_phone}`,
+                              )
+                            }>
+                            <View
+                              style={{
+                                height: responsiveScreenHeight(4),
+                                width: responsiveScreenHeight(6),
+                                borderRadius: responsiveScreenHeight(1),
+                                borderWidth: 1,
+                                borderColor: 'blue',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                              }}>
+                              <Image
+                                source={PhoneCall}
+                                style={{
+                                  height: responsiveScreenHeight(5),
+                                  width: responsiveScreenWidth(3),
+                                }}
+                                resizeMode="contain"
+                              />
+                            </View>
+                          </TouchableOpacity>
+                        </View>
+                        <View>
+                          <TouchableOpacity
+                            onPress={() =>
+                              Linking.openURL(
+                                `sms:${selectedRide.customer_phone}`,
+                              )
+                            }>
+                            <View
+                              style={{
+                                height: responsiveScreenHeight(4),
+                                width: responsiveScreenHeight(6),
+                                borderRadius: responsiveScreenHeight(1),
+                                borderWidth: 1,
+                                borderColor: 'blue',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                              }}>
+                              <Image
+                                source={SMSIcon}
+                                style={{
+                                  height: responsiveScreenHeight(4),
+                                  width: responsiveScreenWidth(7),
+                                }}
+                                resizeMode="contain"
+                              />
+                            </View>
+                          </TouchableOpacity>
                         </View>
                       </View>
                     </View>
-                  </View>
-                  <View style={{paddingTop: responsiveScreenHeight(3)}}>
-                    <View
-                      style={{
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        flexDirection: 'row',
-                      }}>
-                      <View style={HomeStyle.step}>
-                        <Image
-                          source={Compass}
-                          style={{
-                            height: responsiveScreenHeight(4),
-                            width: responsiveScreenWidth(7),
-                          }}
-                          resizeMode="contain"
-                        />
-                        <Text style={HomeStyle.textSteps}>
-                          Tiruppur, Tamil Nadu, India
-                        </Text>
-                      </View>
-                      <View>
-                        <TouchableOpacity
-                          style={{
-                            height: responsiveScreenHeight(4),
-                            width: responsiveScreenHeight(4),
-                            borderRadius: responsiveScreenHeight(1),
-                            borderWidth: 1,
-                            borderColor: 'black',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                          }}>
-                          <Image
-                            source={Destination}
-                            style={{
-                              height: responsiveScreenHeight(4),
-                              width: responsiveScreenWidth(7),
-                            }}
-                            resizeMode="contain"
-                          />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    <View style={{paddingLeft: responsiveScreenWidth(3)}}>
+                    <View style={{paddingTop: responsiveScreenHeight(3)}}>
                       <View
                         style={{
-                          width: responsiveScreenWidth(1),
-                          height: responsiveScreenHeight(4),
-                          borderStyle: 'dashed',
-                          borderWidth: 1,
-                          borderColor: '#0C3384',
-                          justifyContent: 'center',
+                          justifyContent: 'space-between',
                           alignItems: 'center',
-                        }}></View>
-                    </View>
-
-                    {/* End Location */}
-                    <View
-                      style={{
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        flexDirection: 'row',
-                      }}>
-                      <View style={HomeStyle.step}>
-                        <Image
-                          source={Destination}
-                          style={{
-                            height: responsiveScreenHeight(4),
-                            width: responsiveScreenWidth(7),
-                          }}
-                          resizeMode="contain"
-                        />
-                        <Text style={HomeStyle.textSteps}>
-                          Salem, Tamil Nadu, India
-                        </Text>
+                          flexDirection: 'row',
+                        }}>
+                        <View style={HomeStyle.step}>
+                          <Image
+                            source={Compass}
+                            style={{
+                              height: responsiveScreenHeight(4),
+                              width: responsiveScreenWidth(7),
+                            }}
+                            resizeMode="contain"
+                          />
+                          <Text style={HomeStyle.textSteps}>
+                            {selectedRide.start_address}
+                          </Text>
+                        </View>
+                        <View>
+                          <TouchableOpacity
+                            style={{
+                              height: responsiveScreenHeight(4),
+                              width: responsiveScreenHeight(4),
+                              borderRadius: responsiveScreenHeight(1),
+                              borderWidth: 1,
+                              borderColor: 'black',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            }}>
+                            <Image
+                              source={Destination}
+                              style={{
+                                height: responsiveScreenHeight(4),
+                                width: responsiveScreenWidth(7),
+                              }}
+                              resizeMode="contain"
+                            />
+                          </TouchableOpacity>
+                        </View>
                       </View>
-                      <View>
-                        <TouchableOpacity
+
+                      <View style={{paddingLeft: responsiveScreenWidth(3)}}>
+                        <View
                           style={{
+                            width: responsiveScreenWidth(1),
                             height: responsiveScreenHeight(4),
-                            width: responsiveScreenHeight(4),
-                            borderRadius: responsiveScreenHeight(1),
+                            borderStyle: 'dashed',
                             borderWidth: 1,
-                            borderColor: 'black',
+                            borderColor: '#0C3384',
                             justifyContent: 'center',
                             alignItems: 'center',
-                          }}>
+                          }}></View>
+                      </View>
+
+                      {/* End Location */}
+                      <View
+                        style={{
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          flexDirection: 'row',
+                        }}>
+                        <View style={HomeStyle.step}>
                           <Image
                             source={Destination}
                             style={{
@@ -1460,58 +1579,80 @@ const Home = ({navigation}) => {
                             }}
                             resizeMode="contain"
                           />
-                        </TouchableOpacity>
+                          <Text style={HomeStyle.textSteps}>
+                            {selectedRide.end_address}
+                          </Text>
+                        </View>
+                        <View>
+                          <TouchableOpacity
+                            style={{
+                              height: responsiveScreenHeight(4),
+                              width: responsiveScreenHeight(4),
+                              borderRadius: responsiveScreenHeight(1),
+                              borderWidth: 1,
+                              borderColor: 'black',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            }}>
+                            <Image
+                              source={Destination}
+                              style={{
+                                height: responsiveScreenHeight(4),
+                                width: responsiveScreenWidth(7),
+                              }}
+                              resizeMode="contain"
+                            />
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     </View>
-                  </View>
-                  <View
-                    style={{
-                      justifyContent: 'flex-end',
-                      alignItems: 'flex-end',
-                      paddingTop: responsiveScreenHeight(3),
-                    }}>
-                    <TouchableOpacity>
-                      <Image
-                        source={MapsCenter}
-                        style={{
-                          height: responsiveScreenHeight(4),
-                          width: responsiveScreenWidth(7),
-                        }}
-                        resizeMode="contain"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                  <View
-                    style={{
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      paddingTop: responsiveScreenHeight(6),
-                      paddingBottom: responsiveScreenHeight(10),
-                    }}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setModalVisible(true);
-                      }}
+                    <View
                       style={{
-                        width: responsiveScreenWidth(90),
-                        padding: responsiveScreenHeight(2),
+                        justifyContent: 'flex-end',
+                        alignItems: 'flex-end',
+                        paddingTop: responsiveScreenHeight(3),
+                      }}>
+                      <TouchableOpacity>
+                        <Image
+                          source={MapsCenter}
+                          style={{
+                            height: responsiveScreenHeight(4),
+                            width: responsiveScreenWidth(7),
+                          }}
+                          resizeMode="contain"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                    <View
+                      style={{
                         justifyContent: 'center',
                         alignItems: 'center',
-                        backgroundColor: '#0C3384',
-                        borderRadius: responsiveScreenWidth(4),
+                        paddingTop: responsiveScreenHeight(6),
+                        paddingBottom: responsiveScreenHeight(10),
                       }}>
-                      <Text
+                      <TouchableOpacity
+                        onPress={handleStartRideTrip}
                         style={{
-                          fontWeight: '700',
-                          fontSize: responsiveScreenFontSize(2),
-                          lineHeight: 36.14,
-                          color: '#fff',
+                          width: responsiveScreenWidth(90),
+                          padding: responsiveScreenHeight(2),
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          backgroundColor: '#0C3384',
+                          borderRadius: responsiveScreenWidth(4),
                         }}>
-                        Start Ride
-                      </Text>
-                    </TouchableOpacity>
+                        <Text
+                          style={{
+                            fontWeight: '700',
+                            fontSize: responsiveScreenFontSize(2),
+                            lineHeight: 36.14,
+                            color: '#fff',
+                          }}>
+                          Start Ride
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
+                )}
               </Animated.View>
             </View>
             <Modal visible={modalVisible} transparent animationType="slide">
@@ -1523,36 +1664,40 @@ const Home = ({navigation}) => {
                   </Text>
 
                   {/* OTP Input inside Modal */}
-                  <CodeField
-                    ref={ref}
-                    {...props}
-                    value={otpValue}
-                    onChangeText={setOtpValue}
-                    cellCount={CELL_COUNT}
-                    rootStyle={HomeStyle.codeFieldRoot}
-                    keyboardType="number-pad"
-                    textContentType="oneTimeCode"
-                    renderCell={({index, symbol, isFocused}) => (
-                      <View
-                        key={index}
-                        style={[
-                          HomeStyle.cell,
-                          isFocused && HomeStyle.focusCell,
-                        ]}
-                        onLayout={getCellOnLayoutHandler(index)}>
-                        <Text style={HomeStyle.cellText}>{symbol || ' '}</Text>
-                      </View>
-                    )}
-                  />
+             
+                    <View>
+                      <CodeField
+                        ref={ref}
+                        {...props}
+                        value={otpValue}
+                        onChangeText={setOtpValue}
+                        cellCount={CELL_COUNT}
+                        rootStyle={HomeStyle.codeFieldRoot}
+                        keyboardType="number-pad"
+                        textContentType="oneTimeCode"
+                        renderCell={({index, symbol, isFocused}) => (
+                          <View
+                            key={index}
+                            style={[
+                              HomeStyle.cell,
+                              isFocused && HomeStyle.focusCell,
+                            ]}
+                            onLayout={getCellOnLayoutHandler(index)}>
+                            <Text style={HomeStyle.cellText}>
+                              {symbol || ' '}
+                            </Text>
+                          </View>
+                        )}
+                      />
 
-                  {/* Close Modal Button */}
-                  <TouchableOpacity
-                    style={HomeStyle.button}
-                    onPress={() => {
-                      setKMVisible(true);
-                    }}>
-                    <Text style={HomeStyle.buttonText}>Confirm</Text>
-                  </TouchableOpacity>
+                      {/* Close Modal Button */}
+                      <TouchableOpacity
+                        style={HomeStyle.button}
+                        onPress={handleConfirmOtp}>
+                        <Text style={HomeStyle.buttonText}>Confirm</Text>
+                      </TouchableOpacity>
+                    </View>
+                
                 </View>
               </View>
               <Modal visible={kmVisible} transparent animationType="slide">

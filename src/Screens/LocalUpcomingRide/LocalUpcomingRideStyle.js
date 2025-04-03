@@ -5,7 +5,7 @@ import {
   responsiveScreenWidth,
 } from 'react-native-responsive-dimensions';
 
-const OutStationUpcomingRideStyle = StyleSheet.create({
+const LocalUpcomingRideStyle = StyleSheet.create({
   container: {
     alignItems: 'center',
     marginTop: 50,
@@ -248,4 +248,4 @@ const OutStationUpcomingRideStyle = StyleSheet.create({
     alignItems: 'center',
   },
 });
-export default OutStationUpcomingRideStyle;
+export default LocalUpcomingRideStyle;

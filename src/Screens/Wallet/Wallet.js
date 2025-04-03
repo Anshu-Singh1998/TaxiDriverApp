@@ -10,38 +10,25 @@ import {
   ScrollView,
 } from 'react-native';
 import * as React from 'react';
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import Left from '../../../Assets/Left.png';
 import WalletStyle from './WalletStyle';
-
+import {useSelector, useDispatch} from 'react-redux';
+import {
+  walletList,
+  walletListDetails,
+  walletTollSave,
+} from '../../redux/Slices/WalletSlice';
+import moment from 'moment';
 
 const Wallet = ({navigation}) => {
-  const data = [
-    {
-      id: '1',
-      debit: 'Money Debit',
-      amount: '- Rs 10.00',
-      commission: 'Admin Role Commission ',
-      date: '20 Dec 2024',
-      time: '11:02 AM',
-    },
-    {
-      id: '2',
-      debit: 'Money Debit',
-      amount: '- Rs 0.00',
-      commission: 'Admin Role Commission ',
-      date: '16 Dec 2024',
-      time: '05:59 PM',
-    },
-    {
-      id: '',
-      debit: 'Money Debit',
-      amount: '- Rs 5.00',
-      commission: 'Admin Role Commission ',
-      date: '15 Dec 2024',
-      time: '03:05 PM',
-    },
-  ];
+  const dispatch = useDispatch();
+  const {status, loading} = useSelector(state => state.wallet);
+  const walletData = useSelector(state => state.wallet.data);
+
+  useEffect(() => {
+    dispatch(walletList());
+  }, []);
 
   return (
     <View style={WalletStyle.MainContainer}>
@@ -53,21 +40,29 @@ const Wallet = ({navigation}) => {
         />
         <View style={WalletStyle.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Image source={Left} resizeMode="contain" style={WalletStyle.backIcon} />
+            <Image
+              source={Left}
+              resizeMode="contain"
+              style={WalletStyle.backIcon}
+            />
           </TouchableOpacity>
           <Text style={WalletStyle.headerTitle}>Emergency Contacts</Text>
         </View>
         <ScrollView>
           <View>
             <View style={WalletStyle.AvailableBalanceViewContainer}>
-              <View style={WalletStyle.AvailableBalanceView}>
-                <Text style={WalletStyle.AvailableBalanceText}>
-                  Available Balance
-                </Text>
-                <Text style={WalletStyle.AvailableBalanceTextValue}>
-                  Rs. -659.00
-                </Text>
-              </View>
+              {walletData.map((item, index) => (
+                <View
+                  key={index.toString()}
+                  style={WalletStyle.AvailableBalanceView}>
+                  <Text style={WalletStyle.AvailableBalanceText}>
+                    Available Balance
+                  </Text>
+                  <Text style={WalletStyle.AvailableBalanceTextValue}>
+                    Rs {item.balance}
+                  </Text>
+                </View>
+              ))}
             </View>
             <View style={WalletStyle.RecentTransactionsTextView}>
               <View>
@@ -76,12 +71,11 @@ const Wallet = ({navigation}) => {
                 </Text>
               </View>
               <View>
-                {/* <FlatList
-              data={data}
-              keyExtractor={item => item.id}
-              renderItem={({item, index}) => ( */}
-                {data.map((item, index) => (
-                  <View key={index.toString()} style={WalletStyle.ListReasonView}>
+           
+                {walletData.map((item, index) => (
+                  <View
+                    key={index.toString()}
+                    style={WalletStyle.ListReasonView}>
                     <View style={WalletStyle.listContainer}>
                       <View style={WalletStyle.listRow}>
                         <View style={WalletStyle.DashTextView}>
@@ -89,28 +83,43 @@ const Wallet = ({navigation}) => {
                         </View>
                         <View style={WalletStyle.commissionView}>
                           <View>
-                            <Text style={WalletStyle.DebitText}>{item.debit}</Text>
+                            <Text style={WalletStyle.DebitText}>
+                              {item.user_display_name}
+                            </Text>
                           </View>
                           <View>
                             <Text style={WalletStyle.CommissionText}>
-                              {item.commission}
+                              {item.transaction_type}
+                            </Text>
+                          </View>
+                          <View>
+                            <Text style={WalletStyle.CommissionText}>
+                              {item.type}
+                            </Text>
+                          </View>
+                          <View>
+                            <Text style={WalletStyle.CommissionText}>
+                              {item.currency}
                             </Text>
                           </View>
                           <View>
                             <Text style={WalletStyle.DateTimeText}>
-                              {item.date} at {item.time}
+                              {moment(item.datetime).format(
+                                'DD MMM YYYY [at] hh:mmA',
+                              )}
                             </Text>
                           </View>
                         </View>
                         <View>
-                          <Text style={WalletStyle.AmountText}>{item.amount}</Text>
+                          <Text style={WalletStyle.AmountText}>
+                            {item.wallet_balance}
+                          </Text>
                         </View>
                       </View>
                     </View>
                   </View>
                 ))}
-                {/* // )}
-            /> */}
+        
               </View>
             </View>
             <View style={WalletStyle.AddTollRequestBtnView}>

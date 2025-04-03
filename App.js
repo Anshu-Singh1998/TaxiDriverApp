@@ -24,11 +24,7 @@ const Auth = () => (
       component={LoginSplash}
       options={{header: () => null}}
     />
-    <Stack.Screen
-      name="SignIn"
-      component={SignIn}
-      options={{header: () => null}}
-    />
+
     <Stack.Screen
       name="Login"
       component={Login}
@@ -46,6 +42,8 @@ const App = () => {
     }, 5000);
   }, []);
   return (
+
+
     <Provider store={store}>
       <NavigationContainer>
         <Stack.Navigator screenOptions={{headerShown: false}}>

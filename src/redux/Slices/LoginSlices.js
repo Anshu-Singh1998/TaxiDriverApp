@@ -1,23 +1,27 @@
 // src/redux/slices/loginSlice.js
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
 import Api from '../../Api/Api';
-import AsyncStorage from '@react-native-async-storage/async-storage'; 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Async thunk for login
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
-  async ({ email, password }, { rejectWithValue }) => {
+  async ({email, password}, {rejectWithValue}) => {
     try {
-      const response = await Api.post('login', { email, password });
-      console.log(response.data)
+      const response = await Api.post('login', {email, password});
+      // console.log(response.data);
       await AsyncStorage.setItem('access_token', response.data.access_token);
-     
+      await AsyncStorage.setItem('driver_id', response.data.user.id.toString());
       await AsyncStorage.setItem('email_id', response.data.user.email);
+      await AsyncStorage.setItem('user_name', response.data.user.name);
+      console.log("Response login====>>",response.data)
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Something went wrong');
+      return rejectWithValue(
+        error.response?.data?.message || 'Something went wrong',
+      );
     }
-  }
+  },
 );
 
 const loginSlice = createSlice({
@@ -28,14 +32,14 @@ const loginSlice = createSlice({
     error: null,
   },
   reducers: {
-    logout: (state) => {
+    logout: state => {
       state.user = null;
       state.error = null;
     },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     builder
-      .addCase(loginUser.pending, (state) => {
+      .addCase(loginUser.pending, state => {
         state.loading = true;
         state.error = null;
       })
@@ -50,5 +54,5 @@ const loginSlice = createSlice({
   },
 });
 
-export const { logout } = loginSlice.actions;
+export const {logout} = loginSlice.actions;
 export default loginSlice.reducer;

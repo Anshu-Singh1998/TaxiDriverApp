@@ -1,70 +1,64 @@
-// src/redux/slices/ridesSlice.js
 import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
 import Api from '../../Api/Api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const COMPLETE_API = 'trips/complete';
-const CANCEL_API = 'trips/cancel';
+const initialState = {
+  tripData: null,
+  loading: false,
+  error: null,
+};
 
-// Fetch Complete Trips
-export const fetchCompleteTrips = createAsyncThunk(
-  'rides/fetchCompleteTrips',
-  async (payload, thunkAPI) => {
+// Async thunk for posting trip data
+export const postTrip = createAsyncThunk(
+  'trip/postTrip',
+  async (tripDetails, {rejectWithValue}) => {
+    console.log('TripDetails=====>>>>', tripDetails);
     try {
-      const response = await Api.post(COMPLETE_API, payload);
+      const response = await Api.post(
+        'trips/accepted',
+        JSON.stringify(tripDetails), // Convert to raw JSON
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+      console.log('Response from API:', response.data.data.id);
+      const trip_id = response.data?.data.id;
+      console.log('Trip====Id====>>>', trip_id);
+      if (!trip_id) {
+        throw new Error('Trip ID is missing in API response');
+      }
+
+      // Store trip_id in AsyncStorage
+    
+
       return response.data;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || error.message);
-    }
-  },
-);
-
-// Fetch Cancelled Trips
-export const fetchCancelledTrips = createAsyncThunk(
-  'rides/fetchCancelledTrips',
-  async (payload, thunkAPI) => {
-    try {
-      const response = await Api.post(CANCEL_API, payload);
-      return response.data;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+      console.error(
+        'Error posting trip:',
+        error.response?.data || error.message,
+      );
+      return rejectWithValue(error.response?.data || 'Something went wrong');
     }
   },
 );
 
 const ridesSlice = createSlice({
-  name: 'rides',
-  initialState: {
-    completeRides: [],
-    cancelledRides: [],
-    loading: false,
-    error: null,
-  },
+  name: 'trip',
+  initialState,
   reducers: {},
   extraReducers: builder => {
     builder
-      // Complete Rides
-      .addCase(fetchCompleteTrips.pending, state => {
+      .addCase(postTrip.pending, state => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchCompleteTrips.fulfilled, (state, action) => {
+      .addCase(postTrip.fulfilled, (state, action) => {
         state.loading = false;
-        state.completeRides = action.payload?.data || [];
+        state.tripData = action.payload;
       })
-      .addCase(fetchCompleteTrips.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-      // Cancelled Rides
-      .addCase(fetchCancelledTrips.pending, state => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchCancelledTrips.fulfilled, (state, action) => {
-        state.loading = false;
-        state.cancelledRides = action.payload?.data || [];
-      })
-      .addCase(fetchCancelledTrips.rejected, (state, action) => {
+      .addCase(postTrip.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

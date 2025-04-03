@@ -5,25 +5,27 @@ export const documentList = createAsyncThunk(
   'document/documentList',
   async (_, {rejectWithValue}) => {
     try {
-      const response = await Api.post('documents/fetch-all');
-      console.log('Contact List Response >>>>>', response.data);
+      const response = await Api.get('documents/fetch-all');
+      console.log('Wallet List Response >>>>>', response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }
   },
 );
-
 export const documentShow = createAsyncThunk(
   'document/documentShow',
-  async (columnName, {rejectWithValue}) => {
+  async (_, {rejectWithValue}) => {
     try {
-      const response = await Api.post('documents/show', {
-        columnName,
-      });
+      const response = await Api.get(`documents/show?columnName=rc_book`);
+
+      // console.log('API Full Response:', response);
+      console.log('Ride List Data:', response.data);
       console.log('Documents Show Response >>>>>', response.data);
+
       return response.data;
     } catch (error) {
+      console.error('API Error:', error.response?.data || error.message);
       return rejectWithValue(error.response?.data || error.message);
     }
   },
@@ -47,7 +49,7 @@ export const documentSave = createAsyncThunk(
         permit,
         drivers_batch,
       });
-      console.log('Documents Show Response >>>>>', response.data);
+      console.log('Documents Save Response >>>>>', response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -63,7 +65,7 @@ export const documentDownload = createAsyncThunk(
         id,
         columnName,
       });
-      console.log('Documents Show Response >>>>>', response.data);
+      console.log('Documents Download Response >>>>>', response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -87,9 +89,13 @@ const documentSlice = createSlice({
         state.error = null;
       })
       .addCase(documentList.fulfilled, (state, action) => {
-        state.data = action.payload;
+        console.log('API Response in Redux:', action.payload);
+        state.data = Array.isArray(action.payload.data)
+          ? action.payload.data
+          : [action.payload.data];
         state.loading = false;
       })
+
       .addCase(documentList.rejected, (state, action) => {
         state.error = action.payload;
         state.loading = false;
@@ -102,9 +108,14 @@ const documentSlice = createSlice({
         state.error = null;
       })
       .addCase(documentShow.fulfilled, (state, action) => {
-        state.data.push(action.payload); // append new contact
+        if (Array.isArray(state.data)) {
+          state.data = [...state.data, action.payload]; // Merge new data
+        } else {
+          state.data = [action.payload]; // Initialize if empty
+        }
         state.loading = false;
       })
+
       .addCase(documentShow.rejected, (state, action) => {
         state.error = action.payload;
         state.loading = false;

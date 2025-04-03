@@ -1,107 +1,40 @@
-import {View, Text, StyleSheet, Image, TouchableOpacity} from 'react-native';
+import {View, Text, SplashStyleheet, Image, TouchableOpacity} from 'react-native';
 import * as React from 'react';
 import {useEffect} from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import DriverLogo from '../../Assets/DriverLogo.png';
-import {
-  responsiveScreenHeight,
-  responsiveScreenWidth,
-  responsiveScreenFontSize,
-} from 'react-native-responsive-dimensions';
+import SplashStyle from './SplashStyle';
 import {useNavigation} from '@react-navigation/native';
 
 const Splash = () => {
   const navigation = useNavigation();
 
-
   return (
     <LinearGradient
       colors={['#4581FF', '#0C3384']}
-      style={styles.linearGradient}>
-      <View
-        style={{
-          justifyContent: 'center',
-          alignItems: 'center',
-          paddingTop: responsiveScreenHeight(10),
-        }}>
-        <View
-          style={{
-            height: responsiveScreenHeight(30),
-            width: responsiveScreenHeight(30),
-            borderColor: '#fff',
-            borderRadius: responsiveScreenWidth(60),
-            borderWidth: responsiveScreenHeight(3),
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}>
+      style={SplashStyle.linearGradient}>
+      <View style={SplashStyle.container}>
+        <View style={SplashStyle.DriverLogoImgView}>
           <Image
             source={DriverLogo}
-            style={{
-              height: responsiveScreenHeight(60),
-              width: responsiveScreenWidth(80),
-            }}
+            style={SplashStyle.DriverLogoImg}
             resizeMode="contain"
           />
         </View>
       </View>
-      <View style={{paddingTop: responsiveScreenHeight(4)}}>
-        <Text
-          style={{
-            fontWeight: '700',
-            fontSize: responsiveScreenFontSize(4),
-            lineHeight: 50.2,
-            color: '#fff',
-            textAlign: 'center',
-          }}>
-          Welcome To
-        </Text>
-        <Text
-          style={{
-            fontWeight: '700',
-            fontSize: responsiveScreenFontSize(4),
-            lineHeight: 50.2,
-            color: '#fff',
-            textAlign: 'center',
-          }}>
-          Blue Taxi Driver App
-        </Text>
+      <View style={SplashStyle.WelcomeAppTextView}>
+        <Text style={SplashStyle.WelcomeToText}>Welcome To</Text>
+        <Text style={SplashStyle.BlueTaxiDriverAppText}>Blue Taxi Driver App</Text>
       </View>
-      <View
-        style={{
-          justifyContent: 'center',
-          alignItems: 'center',
-          paddingTop: responsiveScreenHeight(10),
-        }}>
+      <View style={SplashStyle.GetStartedBtnView}>
         <TouchableOpacity
-        onPress={()=>navigation.navigate('Auth')}
-          style={{
-            width: responsiveScreenWidth(60),
-            padding: responsiveScreenHeight(2),
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: '#FDC10F',
-            borderRadius: responsiveScreenWidth(8),
-          }}>
-          <Text
-            style={{
-              fontWeight: '700',
-              fontSize: responsiveScreenFontSize(2),
-              lineHeight: 36.14,
-              color: '#000',
-            }}>
-            Get Started
-          </Text>
+          onPress={() => navigation.navigate('Auth')}
+          style={SplashStyle.GetStartedBtn}>
+          <Text style={SplashStyle.GetStartedText}>Get Started</Text>
         </TouchableOpacity>
       </View>
     </LinearGradient>
   );
 };
-const styles = StyleSheet.create({
-  linearGradient: {
-    flex: 1,
-    paddingLeft: 15,
-    paddingRight: 15,
-    borderRadius: 5,
-  },
-});
+
 export default Splash;

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState } from 'react';
+import {useState, useEffect} from 'react';
 import {createDrawerNavigator} from '@react-navigation/drawer';
 import {
   View,
@@ -9,7 +9,7 @@ import {
   Image,
   Settings,
   ScrollView,
-  Modal
+  Modal,
 } from 'react-native';
 import {
   responsiveScreenFontSize,
@@ -51,6 +51,12 @@ import Notification from '../../Screens/Notification/Notification';
 import BasicTick from '../../../Assets/BasicTick.png';
 import Cross from '../../../Assets/Cross.png';
 import Tick from '../../../Assets/Tick.png';
+import DocumentViewer from '../../Screens/Document/DocumentViewer';
+import {useDispatch, useSelector} from 'react-redux';
+import {logout} from '../../redux/Slices/SettingsSlice';
+import Login from '../../Auth/Login';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Drawer = createDrawerNavigator();
 
@@ -58,13 +64,40 @@ const Drawer = createDrawerNavigator();
 const CustomDrawerContent = ({navigation}) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [isEnabled, setIsEnabled] = useState(false);
+  const dispatch = useDispatch();
+
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => {
+    const getUserData = async () => {
+      try {
+        const storedName = await AsyncStorage.getItem('user_name');
+        const storedEmail = await AsyncStorage.getItem('email_id');
+
+        if (storedName) setUserName(storedName);
+        if (storedEmail) setUserEmail(storedEmail);
+      } catch (error) {
+        console.error('Error fetching user data from AsyncStorage:', error);
+      }
+    };
+
+    getUserData();
+  }, []);
+
+  console.log('Username===>>>', userName);
+  console.log('userEmail===>>>', userEmail);
+
   const toggleSwitch = () => {
     setModalVisible(true);
   };
   const handleYes = () => {
     setIsEnabled(prev => !prev);
     setModalVisible(false);
+    dispatch(logout());
+    navigation.navigate('Login');
   };
+
   return (
     <View style={styles.container}>
       <View
@@ -125,7 +158,7 @@ const CustomDrawerContent = ({navigation}) => {
               fontWeight: 'bold',
               lineHeight: 30,
             }}>
-            Tester
+            {userName}
           </Text>
           <Text
             style={{
@@ -134,7 +167,7 @@ const CustomDrawerContent = ({navigation}) => {
               fontWeight: '600',
               lineHeight: 30,
             }}>
-            Tester@gmail.com
+            {userEmail}
           </Text>
         </View>
       </View>
@@ -149,6 +182,15 @@ const CustomDrawerContent = ({navigation}) => {
           />
           <Text style={styles.subMenuText}>Profile</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.subMenuItem}
+          onPress={() => navigation.navigate('Document')}>
+          <Image source={Documents} style={styles.icon} resizeMode="contain" />
+          <Text style={styles.subMenuText}>Document</Text>
+        </TouchableOpacity>
+
+        {/* Rides ,Out Station & Local */}
         <TouchableOpacity
           style={styles.subMenuItem}
           onPress={() => navigation.navigate('Rides')}>
@@ -157,25 +199,9 @@ const CustomDrawerContent = ({navigation}) => {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.subMenuItem}
-          onPress={() => navigation.navigate('BankInfo')}>
-          <Image
-            source={BankBuilding}
-            style={styles.icon}
-            resizeMode="contain"
-          />
-          <Text style={styles.subMenuText}>BankInfo</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.subMenuItem}
-          onPress={() => navigation.navigate('Document')}>
-          <Image source={Documents} style={styles.icon} resizeMode="contain" />
-          <Text style={styles.subMenuText}>Document</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.subMenuItem}
-          onPress={() => navigation.navigate('Earnings')}>
-          <Image source={Expensive} style={styles.icon} resizeMode="contain" />
-          <Text style={styles.subMenuText}>Earnings</Text>
+          onPress={() => navigation.navigate('LocalUpcomingRide')}>
+          <Image source={CarTheft} style={styles.icon} resizeMode="contain" />
+          <Text style={styles.subMenuText}>Local Upcoming Ride</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.subMenuItem}
@@ -189,27 +215,37 @@ const CustomDrawerContent = ({navigation}) => {
           <Image source={Contact} style={styles.icon} resizeMode="contain" />
           <Text style={styles.subMenuText}>Emergency Contacts</Text>
         </TouchableOpacity>
+        {/* All Earnings, Wallent , Bank Info */}
+        <TouchableOpacity
+          style={styles.subMenuItem}
+          onPress={() => navigation.navigate('BankInfo')}>
+          <Image
+            source={BankBuilding}
+            style={styles.icon}
+            resizeMode="contain"
+          />
+          <Text style={styles.subMenuText}>BankInfo</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.subMenuItem}
+          onPress={() => navigation.navigate('Earnings')}>
+          <Image source={Expensive} style={styles.icon} resizeMode="contain" />
+          <Text style={styles.subMenuText}>Earnings</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.subMenuItem}
           onPress={() => navigation.navigate('Wallet')}>
           <Image source={WalletImg} style={styles.icon} resizeMode="contain" />
           <Text style={styles.subMenuText}>Wallet</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.subMenuItem}
-          onPress={() => navigation.navigate('LocalUpcomingRide')}>
-          <Image source={CarTheft} style={styles.icon} resizeMode="contain" />
-          <Text style={styles.subMenuText}>Local Upcoming Ride</Text>
-        </TouchableOpacity>
+        {/* Settings, LOgout */}
         <TouchableOpacity
           style={styles.subMenuItem}
           onPress={() => navigation.navigate('Settings')}>
           <Image source={Gear} style={styles.icon} resizeMode="contain" />
           <Text style={styles.subMenuText}>Settings</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.subMenuItem}
-          onPress={toggleSwitch}>
+        <TouchableOpacity style={styles.subMenuItem} onPress={toggleSwitch}>
           <Image source={LogoutImg} style={styles.icon} resizeMode="contain" />
           <Text style={styles.subMenuText}>Logout</Text>
         </TouchableOpacity>
@@ -305,6 +341,7 @@ const DrawerNavigation = () => {
         <Drawer.Screen name="Rides" component={Rides} />
         <Drawer.Screen name="BankInfo" component={BankInfo} />
         <Drawer.Screen name="Document" component={Document} />
+        <Drawer.Screen name="DocumentViewer" component={DocumentViewer} />
         <Drawer.Screen name="Earnings" component={Earnings} />
 
         <Drawer.Screen name="EmergencyContacts" component={EmergencyContacts} />
@@ -347,9 +384,14 @@ const DrawerNavigation = () => {
           component={AboutUs}
           options={{header: () => null}}
         />
-          <Drawer.Screen
+        <Drawer.Screen
           name="Notification"
           component={Notification}
+          options={{header: () => null}}
+        />
+        <Drawer.Screen
+          name="Login"
+          component={Login}
           options={{header: () => null}}
         />
       </Drawer.Navigator>

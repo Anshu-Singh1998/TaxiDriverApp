@@ -1,42 +1,58 @@
 import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
-import Api from '../../Api/Api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
+// Async thunk for fetching driver ride list
 export const driverRideList = createAsyncThunk(
   'driver/driverRideList',
   async (_, {rejectWithValue}) => {
     try {
-      const response = await Api.get(
-        'https://bluetaxi.varmadns.com/demo/api/riderequest/list',
+      const email = await AsyncStorage.getItem('email_id');
+      console.log('Email======>>>', email); // Get email from AsyncStorage
+
+      if (!email) {
+        return rejectWithValue('Email not found in storage');
+      }
+
+      const response = await axios.get(
+        `https://bluetaxi.varmadns.com/demo/api/riderequest/list?email=${email}`,
       );
-      console.log('Contact List Response >>>>>', response.data);
-      return response.data;
+
+      // console.log('API Full Response:', response);
+      // console.log('Ride List Data:', response.data);
+
+      return response.data; // Returns the full response (includes `message` and `data`)
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }
   },
 );
 
+// Redux slice
 const driverListSlice = createSlice({
   name: 'driver',
   initialState: {
-    data: [],
+    data: [], // Stores only the rides array
+    message: '', // Stores success message
     loading: false,
     error: null,
   },
   reducers: {},
   extraReducers: builder => {
-    // Bank Info List
     builder
       .addCase(driverRideList.pending, state => {
         state.loading = true;
         state.error = null;
       })
       .addCase(driverRideList.fulfilled, (state, action) => {
-        state.data = action.payload.data;
+        // console.log('Full API Response in Redux:', action.payload);
+        state.data = action.payload.data || []; // Store ride list
+        state.message = action.payload.message || 'Success';
         state.loading = false;
       })
       .addCase(driverRideList.rejected, (state, action) => {
-        state.error = action.payload;
+        state.error =
+          action.payload?.message || action.payload || 'Something went wrong!';
         state.loading = false;
       });
   },

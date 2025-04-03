@@ -25,7 +25,7 @@ export const updateProfileData = createAsyncThunk(
   async (updatedData, { rejectWithValue }) => {
     try {
       const response = await Api.put('profile/update', updatedData);
-      console.log('Profile Update Response:', response.data);
+      // console.log('Profile Update Response:', response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
