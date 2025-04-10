@@ -13,6 +13,9 @@ import driverReducer from "../Slices/DriverListSlice"
 import outStationReducer from '../Slices/OutStationSlice';
 import localReducer from "../Slices/LocalRideSlice"
 import otpReducer from "../Slices/otpSlice"
+import availabilityReducer from "../Slices/AvailabilitySlice"
+import kmReducer from "../Slices/KilometerSlice"
+import driverEarningReducer from "../Slices/DriverEarningSlice"
 
 
 const store = configureStore({
@@ -30,7 +33,10 @@ const store = configureStore({
     driver:driverReducer,
     outStation:outStationReducer,
     local:localReducer,
-    otp:otpReducer
+    otp:otpReducer,
+    availability:availabilityReducer,
+    kilometer:kmReducer,
+    driverEarning:driverEarningReducer
   },
 });
 

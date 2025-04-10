@@ -9,6 +9,8 @@ import SignIn from './src/Auth/SignIn';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {Provider} from 'react-redux';
 import store from './src/redux/store/store';
+// import {I18nextProvider} from 'react-i18next';
+// import i18n from './src/locales/i18n';
 
 const Stack = createNativeStackNavigator();
 
@@ -42,16 +44,19 @@ const App = () => {
     }, 5000);
   }, []);
   return (
-
-
     <Provider store={store}>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{headerShown: false}}>
-          <Stack.Screen name="Splash" component={Splash} />
-          <Stack.Screen name="Auth" component={Auth} />
-          <Stack.Screen name="DrawerNavigation" component={DrawerNavigation} />
-        </Stack.Navigator>
-      </NavigationContainer>
+     
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{headerShown: false}}>
+            <Stack.Screen name="Splash" component={Splash} />
+            <Stack.Screen name="Auth" component={Auth} />
+            <Stack.Screen
+              name="DrawerNavigation"
+              component={DrawerNavigation}
+            />
+          </Stack.Navigator>
+        </NavigationContainer>
+     
     </Provider>
   );
 };

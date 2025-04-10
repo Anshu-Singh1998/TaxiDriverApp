@@ -359,5 +359,42 @@ const EarningStyle = StyleSheet.create({
     paddingRight: responsiveScreenWidth(10),
   },
   EarningContainer: {flex: 1},
+  TripTypeText: {
+    fontWeight: '400',
+    fontSize: 18,
+    lineHeight: 36,
+    color: '#000',
+  },
+  RideBox: {
+    borderWidth: 1,
+    borderColor: '#000',
+    width: responsiveScreenWidth(90),
+    padding: responsiveScreenHeight(2),
+  },
+  RideBoxView: {
+    paddingTop: responsiveScreenHeight(4),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  GenerateBtn: {
+    width: responsiveScreenWidth(50),
+    padding: responsiveScreenHeight(2),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0C3384',
+    borderRadius: responsiveScreenWidth(3),
+  },
+  GenerateBtnText: {
+    fontWeight: '400',
+    fontSize: responsiveScreenFontSize(3),
+    lineHeight: 36,
+    color: '#fff',
+  },
+  GenerateBtnView: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: responsiveScreenHeight(2),
+  },
+
 });
 export default EarningStyle;

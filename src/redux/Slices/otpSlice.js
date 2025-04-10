@@ -5,10 +5,10 @@ import Api from '../../Api/Api';
 // Async Thunk to fetch trip_id and send OTP
 export const sendOtp = createAsyncThunk(
   'trip/sendOtp',
-  async (_, {rejectWithValue}) => {
+  async (trip_id, {rejectWithValue}) => {
+    console.log('Trip id before calling api ====>>>', trip_id);
     try {
-      const trip_id = await AsyncStorage.getItem('trip_id');
-      console.log('Trip id===>>>', trip_id);
+      console.log('Trip id before calling api 12234 ====>>>', trip_id);
       if (!trip_id) {
         throw new Error('Trip ID not found');
       }
@@ -37,10 +37,12 @@ export const sendOtp = createAsyncThunk(
 export const verifyTripOtp = createAsyncThunk(
   'trip/verifyOtp',
   async ({trip_id, otp}, {rejectWithValue}) => {
+    console.log('Trip id for verification====>>>', trip_id);
+    console.log('otp for verification=====>>>>', otp);
+
     try {
-      const response = await Api.post(
-        'trips/otp-verify', // API endpoint
-        JSON.stringify({trip_id, otp}), // Send raw JSON
+      const response = await Api.get(
+        `trips/otp-verify?trip_id=${trip_id}&otp=${otp}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -66,6 +68,7 @@ const otpSlice = createSlice({
   initialState: {
     trip_id: null,
     loading: false,
+    sentOtp: null,
     error: null,
   },
   reducers: {},
@@ -77,6 +80,8 @@ const otpSlice = createSlice({
       })
       .addCase(sendOtp.fulfilled, (state, action) => {
         state.loading = false;
+        state.trip = action.payload.trip;
+        state.sentOtp = action.payload.otp;
       })
       .addCase(sendOtp.rejected, (state, action) => {
         state.loading = false;

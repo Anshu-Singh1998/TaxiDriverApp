@@ -13,6 +13,7 @@ Api.interceptors.request.use(
     // Don't add token for login
     if (!config.url.includes('login')) {
       const token = await AsyncStorage.getItem('access_token');
+      console.log('Sending token:', token); 
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }

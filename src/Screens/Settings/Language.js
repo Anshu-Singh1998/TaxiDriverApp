@@ -20,10 +20,12 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import {FlatList} from 'react-native-gesture-handler';
 import LanguageStyle from './LanguageStyle';
+import {useTranslation} from 'react-i18next';
 
 const Language = () => {
   const navigation = useNavigation();
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedId, setSelectedId] = useState(i18n.language);
+  const {t, i18n} = useTranslation();
   const data = [
     {
       id: '1',
@@ -174,6 +176,12 @@ const Language = () => {
     },
   ];
 
+  const handleLanguageSelect = langId => {
+    setSelectedId(langId);
+    i18n.changeLanguage(langId);
+    // Optionally: Persist selection using AsyncStorage
+  };
+
   return (
     <View style={LanguageStyle.container}>
       <StatusBar
@@ -199,7 +207,7 @@ const Language = () => {
             const isSelected = item.id === selectedId;
             return (
               <View style={LanguageStyle.ListViewSpace}>
-                <TouchableOpacity onPress={() => setSelectedId(item.id)}>
+                <TouchableOpacity onPress={() => handleLanguageSelect(item.id)}>
                   <View
                     style={[
                       LanguageStyle.CountryView,

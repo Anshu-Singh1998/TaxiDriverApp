@@ -247,5 +247,34 @@ const OutStationUpcomingRideStyle = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    // alignItems: 'center',
+  },
+  title: {
+    fontSize: responsiveScreenFontSize(2),
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#000',
+  },
+  subTitle: {
+    fontSize: responsiveScreenFontSize(2),
+    fontWeight: '200',
+    marginBottom: 15,
+    color: 'grey',
+  },
 });
 export default OutStationUpcomingRideStyle;

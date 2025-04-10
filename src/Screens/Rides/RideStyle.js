@@ -246,6 +246,7 @@ const RideStyle = StyleSheet.create({
     paddingTop: responsiveScreenHeight(4),
     justifyContent: 'center',
     alignItems: 'center',
+    paddingBottom:responsiveScreenHeight(20)
   },
 });
 export default RideStyle;

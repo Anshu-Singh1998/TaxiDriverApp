@@ -41,14 +41,15 @@ export const localUpcoming = createAsyncThunk(
       }
 
       const response = await axios.get(
-        `https://bluetaxi.varmadns.com/demo/api/riderequest/list?email=${email}&ride_type=Local`,
+        `https://bluetaxi.varmadns.com/demo/api/riderequest/upcoming-list?email=${email}&ride_type=Local`,
       );
 
-      // console.log('API Full Response:', response);
-      // console.log('Ride List Data:', response.data);
+      console.log('API Full Response:', response);
+      console.log('Ride List Data:', response.data);
 
       return response.data;
     } catch (error) {
+      console.log("Errorr=>>>>>",error.response?.data || error.message)
       return rejectWithValue(error.response?.data || error.message);
     }
   },

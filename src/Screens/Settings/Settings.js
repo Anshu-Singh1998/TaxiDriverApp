@@ -30,22 +30,22 @@ import {
 } from 'react-native-responsive-dimensions';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch} from 'react-redux';
-import {logout} from '../../redux/Slices/SettingsSlice';
+import {checkAvailability} from '../../redux/Slices/AvailabilitySlice';
 
 const Settings = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const [isEnabled, setIsEnabled] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+ 
 
   const toggleSwitch = () => {
     setModalVisible(true);
   };
-
-  const handleYes = () => {
+  const handleToggleYes = () => {
     setIsEnabled(prev => !prev);
     setModalVisible(false);
-    dispatch(logout());
+    dispatch(checkAvailability());
   };
 
   return (
@@ -362,7 +362,7 @@ const Settings = () => {
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.yesButton}
-                      onPress={handleYes}>
+                      onPress={handleToggleYes}>
                       <Image
                         source={BasicTick}
                         style={styles.BasicTickImg}
@@ -375,6 +375,7 @@ const Settings = () => {
               </View>
             </View>
           </Modal>
+        
         </View>
       </View>
     </View>

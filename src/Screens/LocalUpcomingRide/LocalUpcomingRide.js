@@ -6,6 +6,7 @@ import {
   Animated,
   TouchableOpacity,
   FlatList,
+  Modal,
 } from 'react-native';
 import React from 'react';
 import {useState, useEffect} from 'react';
@@ -19,6 +20,7 @@ import {
   responsiveScreenFontSize,
 } from 'react-native-responsive-dimensions';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import BasicTick from '../../../Assets/BasicTick.png';
 import Svg, {Line} from 'react-native-svg';
 import {useNavigation} from '@react-navigation/native';
 import LocalUpcomingRideStyle from './LocalUpcomingRideStyle';
@@ -28,11 +30,14 @@ import {
   localCancelled,
   localUpcoming,
 } from '../../redux/Slices/LocalRideSlice';
+import {postTrip} from '../../redux/Slices/ridesSlice';
 import moment from 'moment';
 
 const LocalUpcomingRide = () => {
   const [selected, setSelected] = useState('Upcoming');
   const translateX = new Animated.Value(selected === 'Upcoming' ? 0 : 1);
+  const [confirmationModal, setConfirmationModal] = useState(false);
+  const [selectedRide, setSelectedRide] = useState(null);
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const {completed, cancelled, upcoming, loading, error} = useSelector(
@@ -53,6 +58,47 @@ const LocalUpcomingRide = () => {
     dispatch(localCancelled());
     dispatch(localUpcoming());
   }, [dispatch]);
+
+  const handleYesPress = async () => {
+    if (!selectedRide) return;
+
+    const tripDetails = {
+      booking_ref_no: selectedRide.booking_ref_no,
+      trip_type: selectedRide.trip_type,
+      pickup: selectedRide.pickup,
+      drop: selectedRide.drop,
+      customer_name: selectedRide.customer_name,
+      customer_phone: selectedRide.customer_contact_phone,
+      customer_email: selectedRide.customer_email,
+      customer_address: selectedRide.customer_address,
+      pickup_latitude:selectedRide.pickup_latitude,
+      pickup_longitude:selectedRide.pickup_longitude,
+      drop_latitude:selectedRide.drop_latitude,
+      drop_longitude:selectedRide.drop_longitude
+    };
+
+    try {
+      const response = await dispatch(postTrip(tripDetails)).unwrap(); // get real accepted data
+      console.log('Accept response ===>>>', response);
+
+      if (response?.data) {
+        const updatedRide = {
+          ...selectedRide,
+          ...response.data, // merge accepted data (id will now be correct)
+        };
+        console.log('UpdatedRide===>>>>', updatedRide);
+        setSelectedRide(updatedRide); // update state
+        console.log('SelectedRide===>>>>', selectedRide);
+        setConfirmationModal(false);
+        navigation.navigate('Home', {
+          openModal: true,
+          rideDetails: updatedRide, // pass the updated ride with correct ID
+        });
+      }
+    } catch (error) {
+      console.error('Error accepting trip:', error);
+    }
+  };
 
   const renderContent = () => {
     switch (selected) {
@@ -108,7 +154,7 @@ const LocalUpcomingRide = () => {
                           resizeMode="contain"
                         />
                         <Text style={LocalUpcomingRideStyle.textSteps}>
-                          {item.start_address}
+                          {item.pickup}
                         </Text>
                       </View>
                       <View style={LocalUpcomingRideStyle.lineView}>
@@ -126,21 +172,19 @@ const LocalUpcomingRide = () => {
                           resizeMode="contain"
                         />
                         <Text style={LocalUpcomingRideStyle.textSteps}>
-                          {item.end_address}
+                          {item.drop}
                         </Text>
                       </View>
                     </View>
                     <View style={LocalUpcomingRideStyle.StartBtnView}>
                       <TouchableOpacity
-                        onPress={() =>
-                          navigation.navigate('Home', {
-                            openModal: true,
-                            rideDetails: item,
-                          })
-                        }
+                        onPress={() => {
+                          setSelectedRide(item); // Store the clicked ride
+                          setConfirmationModal(true);
+                        }}
                         style={LocalUpcomingRideStyle.StartBtn}>
                         <Text style={LocalUpcomingRideStyle.StartBtnText}>
-                          Start
+                          Accept
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -148,6 +192,96 @@ const LocalUpcomingRide = () => {
                 </View>
               )}
             />
+            <Modal
+              visible={confirmationModal}
+              transparent
+              animationType="slide">
+              <View style={LocalUpcomingRideStyle.modalContainer}>
+                <View
+                  style={[
+                    LocalUpcomingRideStyle.modalContent,
+                    {backgroundColor: '#0C3384'},
+                  ]}>
+                  <View style={{alignSelf: 'center'}}>
+                    <View
+                      style={{
+                        height: responsiveScreenHeight(8),
+                        width: responsiveScreenHeight(8),
+                        borderRadius: responsiveScreenHeight(4),
+                        justifyContent: 'center',
+                        alignItems: 'center',
+
+                        backgroundColor: '#396ACFFC',
+                      }}>
+                      <Image
+                        source={BasicTick}
+                        style={{
+                          height: responsiveScreenHeight(4),
+                          width: responsiveScreenWidth(8),
+                          tintColor: '#fff',
+                        }}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  </View>
+
+                  <View style={{alignSelf: 'center'}}>
+                    <Text
+                      style={[
+                        LocalUpcomingRideStyle.subTitle,
+                        {textAlign: 'center', width: responsiveScreenWidth(50)},
+                      ]}>
+                      Are you sure that you are on way to the of pick up
+                      location
+                    </Text>
+                  </View>
+
+                  {/* Close Modal Button */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}>
+                    <TouchableOpacity
+                      style={[
+                        LocalUpcomingRideStyle.button,
+                        {
+                          backgroundColor: '#0C3384',
+                          borderRadius: responsiveScreenWidth(2),
+                          width: responsiveScreenWidth(30),
+                          borderColor: '#000',
+                          borderWidth: 1,
+                          padding: responsiveScreenHeight(2),
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        },
+                      ]}
+                      onPress={() => setConfirmationModal(false)}>
+                      <Text style={LocalUpcomingRideStyle.buttonText}>
+                        Cancel
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        {
+                          backgroundColor: '#04B725',
+                          width: responsiveScreenWidth(30),
+                          borderRadius: responsiveScreenWidth(2),
+                          borderColor: '#000',
+                          borderWidth: 1,
+                          padding: responsiveScreenHeight(2),
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        },
+                      ]}
+                      onPress={handleYesPress}>
+                      <Text style={LocalUpcomingRideStyle.buttonText}>Yes</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </Modal>
           </View>
         );
       case 'Completed':

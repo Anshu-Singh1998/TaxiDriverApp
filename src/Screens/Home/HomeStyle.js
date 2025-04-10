@@ -324,5 +324,33 @@ const HomeStyle = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  earningsContainer: {
+    position: 'absolute',
+    top: responsiveScreenHeight(11), // Adjust as needed
+    left: '10%', // Centering horizontally
+    right: '10%',
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 8,
+    elevation: 5, // For shadow on Android
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  overViewContainer: {
+    position: 'absolute',
+    top: responsiveScreenHeight(25), // Adjust as needed
+    left: '10%', // Centering horizontally
+    right: '10%',
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 8,
+    elevation: 5, // For shadow on Android
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
 });
 export default HomeStyle;

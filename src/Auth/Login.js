@@ -28,9 +28,10 @@ const Login = () => {
 
 
   const handleLogin = () => {
+    console.log("Button is being pressed",email , password)
     dispatch(loginUser({ email, password })).then((res) => {
       if (res.meta.requestStatus === 'fulfilled') {
-        navigation.navigate('DrawerNavigation');
+        navigation.navigate('Home');
       }
     });
   };
