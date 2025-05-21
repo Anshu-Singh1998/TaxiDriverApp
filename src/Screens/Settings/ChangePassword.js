@@ -13,6 +13,8 @@ import {useDispatch} from 'react-redux';
 import {changePassword} from '../../redux/Slices/SettingsSlice'; // Adjust the path as per your project structure
 import ChangePasswordStyle from './ChangePasswordStyle';
 import Left from '../../../Assets/Left.png';
+import {responsiveScreenHeight} from 'react-native-responsive-dimensions';
+import HomeStyle from '../Home/HomeStyle';
 
 const ChangePassword = () => {
   const navigation = useNavigation();
@@ -61,7 +63,7 @@ const ChangePassword = () => {
 
       {/* Header */}
       <View style={ChangePasswordStyle.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Image
             source={Left}
             resizeMode="contain"
@@ -70,7 +72,12 @@ const ChangePassword = () => {
         </TouchableOpacity>
         <Text style={ChangePasswordStyle.headerTitle}>Change Password</Text>
       </View>
-      <View style={{justifyContent: 'center', alignItems: 'center'}}>
+      <View
+        style={{
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginTop: responsiveScreenHeight(4),
+        }}>
         {/* Old Password Field */}
         <View style={ChangePasswordStyle.passwordCell}>
           <View style={ChangePasswordStyle.passwordContainer}>
@@ -140,11 +147,13 @@ const ChangePassword = () => {
           </View>
         </View>
         {/* Save Button */}
-        <TouchableOpacity
-          style={ChangePasswordStyle.loginButton}
-          onPress={handleChangePassword}>
-          <Text style={ChangePasswordStyle.loginButtonText}>Save</Text>
-        </TouchableOpacity>
+        <View style={ChangePasswordStyle.SaveBtn}>
+          <TouchableOpacity
+            style={ChangePasswordStyle.loginButton}
+            onPress={handleChangePassword}>
+            <Text style={ChangePasswordStyle.loginButtonText}>Save</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );

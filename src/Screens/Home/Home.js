@@ -14,6 +14,9 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
   Linking,
+  AppState,
+  ToastAndroid,
+  ImageBackground,
 } from 'react-native';
 import {
   CodeField,
@@ -30,6 +33,7 @@ import Compass from '../../../Assets/Compass.png';
 import Destination from '../../../Assets/Destination.png';
 import PhoneCall from '../../../Assets/PhoneCall.png';
 import SMSIcon from '../../../Assets/SMSIcon.png';
+import ZigzagCircle from '../../../Assets/ZigzagCircle.png';
 import GoogleMarker from '../../../Assets/GoogleMarker.png';
 import MapsCenter from '../../../Assets/MapsCenter.png';
 import MapView, {PROVIDER_GOOGLE} from 'react-native-maps';
@@ -46,58 +50,93 @@ import {changeDriverStatus} from '../../redux/Slices/OnlineSlice';
 import {driverRideList} from '../../redux/Slices/DriverListSlice';
 import {postTrip} from '../../redux/Slices/ridesSlice';
 import {sendOtp, verifyTripOtp} from '../../redux/Slices/otpSlice';
-import {startTripKM} from '../../redux/Slices/KilometerSlice';
+import {startTripKM, endTripKM} from '../../redux/Slices/KilometerSlice';
 import {
   fetchDriverEarnings,
   fetchDriverHours,
 } from '../../redux/Slices/DriverEarningSlice';
 import {
   fetchOngoingTrips,
+  fetchCancelledTrips,
+  fetchCompletedTrips,
   markTripArrived,
 } from '../../redux/Slices/ridesSlice';
 import moment from 'moment';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {isSearchBarAvailableForCurrentPlatform} from 'react-native-screens';
 
 const CELL_COUNT = 6; // Number of OTP boxes
 
+const formatLoginTime = timeStr => {
+  if (!timeStr) return '00:00:00';
+
+  const minsMatch = timeStr.match(/(\d+)\s*mins?/);
+  const secsMatch = timeStr.match(/(\d+)\s*secs?/);
+
+  const mins = minsMatch ? parseInt(minsMatch[1]) : 0;
+  const secs = secsMatch ? parseInt(secsMatch[1]) : 0;
+
+  const totalSecs = mins * 60 + secs;
+
+  const hours = Math.floor(totalSecs / 3600);
+  const minutes = Math.floor((totalSecs % 3600) / 60);
+  const seconds = totalSecs % 60;
+
+  const pad = n => (n < 10 ? '0' + n : n);
+
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+};
+
 const Home = ({navigation, route}) => {
-  // console.log('aRoute====>>>>', route.params);
   const [modalVisible, setModalVisible] = useState(false);
   const [kmVisible, setKMVisible] = useState(false);
+  const [endKmVisible, setEndKMVisible] = useState(false);
   const [mapModalVisible, setMapModalVisible] = useState(false);
   const [onlineModalVisible, setOnlineModalVisible] = useState(false);
   const [acceptModalVisible, setAcceptModalVisible] = useState(false);
+  const [cancelTripModal, setCancelTripModal] = useState(false);
   const [textValue, setTextValue] = useState('');
   const [otpValue, setOtpValue] = useState('');
-  const [text, setText] = useState('');
+  const [completeTripOtpValue, setCompleteTripOtpValue] = useState('');
+  const [
+    completeTripOtpVerificationTripId,
+    setCompleteTripOtpVerificationTripId,
+  ] = useState('');
+  const [cancelTripId, setCancelTripId] = useState('');
+  const [completeTripId, setCompleteTripId] = useState('');
+  const [otpConfirmedId, setOtpConfirmedId] = useState('');
   const [location, setLocation] = useState(null);
   const [tripStartModal, setTripStartModal] = useState(false);
+  const [completeTripOtpModal, setCompleteTripOtpModal] = useState(false);
   const [arrivedLocationModal, setArrivedLocationModal] = useState(false);
+  const [paymentAmountModal, setPaymentAmountModal] = useState(false);
   const [arrivedUpdateModal, setArrivedUpdateModal] = useState(null);
   const [isArrived, setIsArrived] = useState(false);
   const [startRideModal, setStartRideModal] = useState(false);
+  const [completeTripResponse, setCompleteTripResponse] = useState(null); // store the response
+  const [showResponseModal, setShowResponseModal] = useState(false);
   const [rideDetails, setRideDetails] = useState([]);
   const [selectedRide, setSelectedRide] = useState(null);
   const [StartRideView, setStartRideView] = useState(null);
   const [tripId, setTripId] = useState(null);
+  const [reason, setReason] = useState('');
   const rideDetailsArray = [rideDetails];
   const [verifiedTripId, setVerifiedTripId] = useState(null);
   const [kmValue, setKmValue] = useState('');
-
+  const [endKmValue, setEndKmValue] = useState('');
   const lastScrollY = useRef(0);
-  // const routeScreen = useRoute();
+  const appState = useRef(AppState.currentState);
+  const [showCompleteTripModal, setShowCompleteTripModal] = useState(false);
   const dispatch = useDispatch();
   const {status, loading} = useSelector(state => state.status);
   const rides = useSelector(state => state.driver.data);
   const tripScheduled = useSelector(state => state.trips);
   const {trip, sentOtp} = useSelector(state => state.otp);
-  console.log('Trip from send otep response===>>', trip);
-  console.log('otp from send otep response===>>', sentOtp);
+
   const km = useSelector(state => state.kilometer);
   const driver_earning = useSelector(state => state.driverEarning.driverearned);
-  console.log('Driver Earningss=====>>>', driver_earning);
   const driver_hours = useSelector(state => state.driverEarning.driverhours);
-  console.log('Driver Earningss=====>>>', driver_earning);
 
   const handleScroll = event => {
     const currentScrollY = event.nativeEvent.contentOffset.y;
@@ -116,7 +155,17 @@ const Home = ({navigation, route}) => {
     setValue: setOtpValue,
   });
 
-  const translateY = new Animated.Value(300); // Initial position below screen
+  const completeTripRef = useBlurOnFulfill({
+    value: completeTripOtpValue,
+    cellCount: CELL_COUNT,
+  });
+  const [completeTripProps, getCompleteTripCellOnLayoutHandler] =
+    useClearByFocusCell({
+      value: completeTripOtpValue,
+      setValue: setCompleteTripOtpValue,
+    });
+
+  const translateY = new Animated.Value(300);
 
   const openModal = () => {
     setMapModalVisible(true);
@@ -185,25 +234,23 @@ const Home = ({navigation, route}) => {
       setTripStartModal(true);
     }
     if (route.params?.rideDetails) {
-      console.log('Ride Details (Before Setting):', route.params.rideDetails);
       setRideDetails(route.params.rideDetails);
     }
   }, [route.params]);
 
   const openMaps = ({pickupLat, pickupLng, dropLat, dropLng}) => {
     if (!pickupLat || !pickupLng || !dropLat || !dropLng) {
-      console.warn('Missing coordinates');
       return;
     }
 
     let url = '';
 
     if (Platform.OS === 'ios') {
-      // Apple Maps with both source and destination
+      // Apple Maps - use directions from source to destination
       url = `http://maps.apple.com/?saddr=${pickupLat},${pickupLng}&daddr=${dropLat},${dropLng}&dirflg=d`;
     } else {
-      // Google Maps with both source and destination
-      url = `https://www.google.com/maps/dir/?api=1&origin=${pickupLat},${pickupLng}&destination=${dropLat},${dropLng}&travelmode=driving`;
+      // Google Maps - directly start navigation with action=navigate
+      url = `google.navigation:q=${dropLat},${dropLng}&mode=d`;
     }
 
     Linking.openURL(url).catch(err =>
@@ -221,34 +268,27 @@ const Home = ({navigation, route}) => {
 
   const handleStartRideTrip = async () => {
     if (!StartRideView) {
-      console.error('No ride selected');
       return;
     }
 
     const trip_id = StartRideView?.id;
-    console.log('Start Ride View=====>>>>', StartRideView);
-    console.log('Start Ride View trip id =====>>>>', trip_id);
 
     if (!trip_id) {
-      console.error('Trip ID not found in StartRideView');
       return;
     }
 
     try {
       // ✅ Don't rely on setTripId here
       const arrivedResponse = await dispatch(markTripArrived(trip_id)).unwrap();
-      console.log('Trip marked as arrived:', arrivedResponse);
 
       // Send OTP request
       const otpResponse = await dispatch(sendOtp(trip_id)).unwrap();
-      console.log('Recieve Otp=====>>>>', otpResponse);
 
       if (otpResponse) {
         const otpString = String(otpResponse); // Convert number to string
         setOtpValue(otpString);
         setModalVisible(true);
       } else {
-        console.error('OTP not received in response');
       }
     } catch (error) {
       console.error('Error while sending OTP:', error);
@@ -261,12 +301,40 @@ const Home = ({navigation, route}) => {
     }
   }, [sentOtp]);
 
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        console.log('App has come to the foreground!');
+
+        // After returning from Maps
+        setShowCompleteTripModal(true);
+
+        // Show small toast or alert
+        if (Platform.OS === 'android') {
+          ToastAndroid.show(
+            'Welcome back! Please complete your trip.',
+            ToastAndroid.SHORT,
+          );
+        } else {
+          Alert.alert('Welcome back!', 'Please complete your trip.');
+        }
+      }
+
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
   const handleConfirmOtp = async () => {
     const trip_id_to_send = trip?.id;
 
     if (!trip_id_to_send || !sentOtp) {
-      console.log('Otp Value====>>>', sentOtp);
-      console.log('Trip Id Value====>>>', trip_id_to_send);
       Alert.alert('Please enter OTP and ensure trip ID is available.');
       return;
     }
@@ -276,7 +344,6 @@ const Home = ({navigation, route}) => {
         verifyTripOtp({trip_id: trip_id_to_send, otp: otpValue}),
       ).unwrap();
 
-      console.log('OTP Verified:', response);
       Alert.alert('OTP verified successfully!');
 
       const verifiedId = response?.trip?.id || trip_id_to_send;
@@ -284,13 +351,11 @@ const Home = ({navigation, route}) => {
       setKMVisible(true);
       setModalVisible(false);
     } catch (error) {
-      console.error('OTP Verification Failed:', error);
       Alert.alert('Invalid OTP. Please try again.');
     }
   };
 
   const handleYesPress = () => {
-    console.log('Here data is being sended to accept api ');
     if (!selectedRide) return;
 
     const tripDetails = {
@@ -311,27 +376,40 @@ const Home = ({navigation, route}) => {
     dispatch(postTrip(tripDetails));
     setAcceptModalVisible(false);
     setMapModalVisible(false);
-    // console.log('StartRideView =====>>>>', StartRideView);
-    // console.log('StartRideView.id =====>>>>', StartRideView?.id);
+  };
 
-    // dispatch(markTripArrived(StartRideView.id)); // put some condition for this line
+  const handleNoPress = async () => {
+    if (!selectedRide) return;
+
+    setCancelTripId(selectedRide.id);
+    setAcceptModalVisible(false);
+
+    try {
+      const resultAction = await dispatch(
+        fetchCancelledTrips({
+          trip_id: selectedRide.id,
+          cancel_type: 'Cancelled by Driver',
+          cancel_reason: reason, // make sure 'reason' is already filled
+        }),
+      );
+
+      if (fetchCancelledTrips.fulfilled.match(resultAction)) {
+        setCancelTripModal(false);
+        setReason('');
+      } else {
+      }
+    } catch (error) {}
   };
 
   const handleAcceptPress = ride => {
-    console.log(
-      'Here accept button is being pressed so that the confirmation can be done while sending selected ride to be passed for accept api',
-    );
     setAcceptModalVisible(true);
     setSelectedRide(ride);
   };
 
+  useEffect(() => {}, [arrivedUpdateModal]);
+
   const handleSubmitKM = async () => {
-    console.log('🚩 KM Value:', kmValue);
-    console.log('🚩 Verified Trip ID:', verifiedTripId);
     if (!kmValue || !verifiedTripId) {
-      console.log('Km====>>>', kmValue);
-      console.log('Verify oTP====>>', verifiedTripId);
-      Alert.alert('Please enter KM and ensure trip is verified.');
       return;
     }
 
@@ -340,8 +418,8 @@ const Home = ({navigation, route}) => {
         startTripKM({id: verifiedTripId, start_km: kmValue}),
       ).unwrap();
 
-      console.log('KM submitted:', response);
-      Alert.alert('KM submitted successfully!');
+      // Alert.alert('KM submitted successfully!');
+      setCompleteTripId(response?.trip.id);
       openMaps({
         pickupLat: response?.trip.pickup_latitude,
         pickupLng: response?.trip.pickup_longitude,
@@ -349,20 +427,91 @@ const Home = ({navigation, route}) => {
         dropLng: response?.trip.drop_longitude,
       });
     } catch (error) {
-      console.error('Error submitting KM:', error);
       Alert.alert('Failed to submit KM. Please try again.');
     }
   };
-  useEffect(() => {
-    console.log(
-      'Arrived update modal under useffect====>>>>',
-      arrivedUpdateModal,
-    );
-  }, [arrivedUpdateModal]);
 
+
+ 
+
+
+  const handleSubmitEndKM = async () => {
+    console.log('Being clicked');
+    if (!endKmValue || !completeTripResponse?.trip.id) {
+      console.log('End km value====>>>', endKmValue);
+      console.log(
+        'trip if for complete trip===>>>',
+        completeTripResponse?.trip.id,
+      );
+      return;
+    }
+
+    try {
+      const response = await dispatch(
+        endTripKM({id: completeTripResponse?.trip.id, end_km: endKmValue}),
+      ).unwrap();
+
+      console.log('Response of End KKm data=====>>>>>>', response);
+    } catch (error) {
+      Alert.alert('Failed to submit KM. Please try again.');
+    }
+  };
+
+  const handleCompleteTrip = async () => {
+    try {
+      const resultAction = await dispatch(
+        fetchCompletedTrips({trip_id: completeTripId}),
+      );
+
+      if (fetchCompletedTrips.fulfilled.match(resultAction)) {
+        console.log('Trip Completed Successfully!', resultAction.payload);
+
+        setCompleteTripResponse(resultAction.payload); // store API response
+
+        setCompleteTripOtpValue(String(resultAction.payload.otp));
+        console.log("Otp Value for final verification after completing trip====>>>",completeTripOtpValue)
+        setCompleteTripOtpVerificationTripId(resultAction.payload.trip.id);
+        setShowCompleteTripModal(false);
+        setShowResponseModal(true);
+        // hide the old complete trip modal
+        // show new response modal
+      } else {
+        console.log('Trip completion failed', resultAction.payload);
+        // Optionally handle failure
+      }
+    } catch (error) {}
+  };
+
+  const handleConfirmCompleteOtp = async () => {
+    const trip_id_to_send = completeTripOtpVerificationTripId;
+    // console.log("Trip Id for complete confirm trip id=====>>>",trip_id_to_send)
+    // console.log("Otp Value for final verification====>>>",completeTripOtpValue)
+
+    if (!trip_id_to_send || !completeTripOtpValue) {
+      Alert.alert('Please enter OTP and ensure trip ID is available.');
+      console.log("Trip Id for complete confirm trip id=====>>>",trip_id_to_send)
+      console.log("Otp Value for final verification====>>>",completeTripOtpValue)
+      return;
+    }
+
+    try {
+      console.log(" inside try Trip Id for complete confirm trip id=====>>>",trip_id_to_send)
+      console.log(" inside try Otp Value for final verification====>>>",completeTripOtpValue)
+      const response = await dispatch(
+        verifyTripOtp({trip_id: trip_id_to_send, otp: completeTripOtpValue}),
+      ).unwrap();
+
+      Alert.alert('OTP verified successfully!');
+      setOtpConfirmedId(response?.trip.id);
+      // const verifiedOtpId = response?.trip?.id || trip_id_to_send;
+    } catch (error) {
+      console.error('OTP Verification Failed:', error.message);
+      Alert.alert('Invalid OTP. Please try again.');
+    }
+  };
   console.log(
-    'startRideView after calledarrived update modal inside it====>>>>',
-    StartRideView,
+    'Otp Verified , response confirm trip id=====>>>>',
+    otpConfirmedId,
   );
 
   return (
@@ -426,79 +575,46 @@ const Home = ({navigation, route}) => {
       </TouchableOpacity>
 
       <View style={HomeStyle.earningsContainer}>
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <Text>Total Rides :</Text>
-            <Text>{driver_earning?.total_hours ?? 0}</Text>
+        <View style={HomeStyle.RowKeyValueView}>
+          <View style={HomeStyle.RowKeyValue}>
+            <Text style={HomeStyle.KeyText}>Total Rides :</Text>
+            <Text style={HomeStyle.ValueText}>
+              {driver_earning?.total_hours ?? 0}
+            </Text>
           </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <Text>Total Earnings:</Text>
-            <Text>{driver_earning?.total_earning ?? 0}</Text>
+          <View style={HomeStyle.RowKeyValue}>
+            <Text style={HomeStyle.KeyText}>Total Earnings:</Text>
+            <Text style={HomeStyle.ValueText}>
+              {driver_earning?.total_earning ?? 0}
+            </Text>
           </View>
         </View>
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <Text>Today Login Hours:</Text>
-            <Text>{driver_earning?.today_earning ?? 0}</Text>
+        <View style={HomeStyle.RowKeyValueView}>
+          <View style={HomeStyle.RowKeyValue}>
+            <Text style={HomeStyle.KeyText}>Today Login Hours:</Text>
+            <Text style={HomeStyle.ValueText}>
+              {driver_earning?.today_earning ?? 0}
+            </Text>
           </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <Text>Wallet Balance:</Text>
-            <Text>{driver_earning?.wallet ?? 0}</Text>
+          <View style={HomeStyle.RowKeyValue}>
+            <Text style={HomeStyle.KeyText}>Wallet Balance:</Text>
+            <Text style={HomeStyle.ValueText}>
+              {driver_earning?.wallet ?? 0}
+            </Text>
           </View>
         </View>
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <Text>Monthly Earning:</Text>
-            <Text>{driver_earning?.monthly_earning ?? 0}</Text>
+        <View style={HomeStyle.RowKeyValueView}>
+          <View style={HomeStyle.RowKeyValue}>
+            <Text style={HomeStyle.KeyText}>Monthly Earning:</Text>
+            <Text style={HomeStyle.ValueText}>
+              {driver_earning?.monthly_earning ?? 0}
+            </Text>
           </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <Text>Avg earnings per hr:</Text>
-            <Text>{driver_earning?.monthly_earning ?? 0}</Text>
+          <View style={HomeStyle.RowKeyValue}>
+            <Text style={HomeStyle.KeyText}>Avg earnings per hr:</Text>
+            <Text style={HomeStyle.ValueText}>
+              {driver_earning?.monthly_earning ?? 0}
+            </Text>
           </View>
         </View>
       </View>
@@ -513,73 +629,45 @@ const Home = ({navigation, route}) => {
             justifyContent: 'space-between',
             alignItems: 'center',
           }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <Text>Earnings:</Text>
-            <Text>0</Text>
+          <View style={HomeStyle.RowKeyValue}>
+            <Text style={HomeStyle.KeyText}>Earnings:</Text>
+            <Text style={HomeStyle.ValueText}>
+              {formatLoginTime(driver_hours?.total_login_time_today)}
+            </Text>
           </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <Text>Hours :</Text>
-            <Text>0</Text>
+          <View style={HomeStyle.RowKeyValue}>
+            <Text style={HomeStyle.KeyText}>Hours :</Text>
+            <Text style={HomeStyle.ValueText}>
+              {formatLoginTime(driver_hours?.total_login_time_today)}
+            </Text>
           </View>
         </View>
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <Text>Weekly Earnings:</Text>
-            <Text>0</Text>
+        <View style={HomeStyle.RowKeyValueView}>
+          <View style={HomeStyle.RowKeyValue}>
+            <Text style={HomeStyle.KeyText}>Weekly Earnings:</Text>
+            <Text style={HomeStyle.ValueText}>
+              {formatLoginTime(driver_hours?.total_login_time_today)}
+            </Text>
           </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <Text>Weekly Hrs:</Text>
-            <Text>0</Text>
+          <View style={HomeStyle.RowKeyValue}>
+            <Text style={HomeStyle.KeyText}>Weekly Hrs:</Text>
+            <Text style={HomeStyle.ValueText}>
+              {formatLoginTime(driver_hours?.total_login_time_today)}
+            </Text>
           </View>
         </View>
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <Text>Overall Earnings:</Text>
-            <Text>0</Text>
+        <View style={HomeStyle.RowKeyValueView}>
+          <View style={HomeStyle.RowKeyValue}>
+            <Text style={HomeStyle.KeyText}>Overall Earnings:</Text>
+            <Text style={HomeStyle.ValueText}>
+              {formatLoginTime(driver_hours?.total_login_time_today)}
+            </Text>
           </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <Text>Overall Hrs:</Text>
-            <Text>0</Text>
+          <View style={HomeStyle.RowKeyValue}>
+            <Text style={HomeStyle.KeyText}>Overall Hrs:</Text>
+            <Text style={HomeStyle.ValueText}>
+              {formatLoginTime(driver_hours?.total_login_time_today)}
+            </Text>
           </View>
         </View>
       </View>
@@ -694,157 +782,147 @@ const Home = ({navigation, route}) => {
                   borderRadius: responsiveScreenWidth(2),
                   padding: responsiveScreenWidth(3),
                 }}>
-                {rides?.map(
-                  (ride, index) => (
-                    console.log('Here data is getting shown for all rides'),
-                    (
+                {rides?.map((ride, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      paddingTop: responsiveScreenHeight(1),
+                    }}>
+                    <View>
                       <View
-                        key={index}
                         style={{
-                          paddingTop: responsiveScreenHeight(1),
+                          flexDirection: 'row',
+                          borderBottomColor: 'grey',
+                          borderBottomWidth: 1,
+                          paddingBottom: responsiveScreenHeight(1),
                         }}>
-                        <View>
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              borderBottomColor: 'grey',
-                              borderBottomWidth: 1,
-                              paddingBottom: responsiveScreenHeight(1),
-                            }}>
-                            <Image
-                              source={
-                                ride.driver_profile_image
-                                  ? {uri: ride.driver_profile_image}
-                                  : null // Replace with your actual default image path
-                              }
-                              style={{
-                                height: responsiveScreenHeight(8),
-                                width: responsiveScreenHeight(8),
-                                borderRadius: responsiveScreenHeight(4), // Optional: Makes it circular
-                              }}
-                              resizeMode="cover"
-                            />
-                            {/* </View> */}
-                            {/* </View> */}
-                            <View
-                              style={{paddingLeft: responsiveScreenWidth(3)}}>
-                              <Text
-                                style={{
-                                  fontSize: responsiveScreenFontSize(2),
-                                  fontWeight: '700',
-                                  color: '#000',
-                                  lineHeight: 40,
-                                }}>
-                                {ride.customer_name}
-                              </Text>
-                              <Text
-                                style={{
-                                  fontSize: responsiveScreenFontSize(2),
-                                  fontWeight: '500',
-                                  color: '#000',
-                                  lineHeight: 30,
-                                }}>
-                                {ride.customer_email}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                        <View
+                        <Image
+                          source={
+                            ride.driver_profile_image
+                              ? {uri: ride.driver_profile_image}
+                              : null // Replace with your actual default image path
+                          }
                           style={{
-                            paddingTop: responsiveScreenHeight(1),
-                            borderBottomColor: 'grey',
-                            borderBottomWidth: 1,
-                            paddingBottom: responsiveScreenHeight(1),
-                          }}>
-                          <View
+                            height: responsiveScreenHeight(8),
+                            width: responsiveScreenHeight(8),
+                            borderRadius: responsiveScreenHeight(4), // Optional: Makes it circular
+                          }}
+                          resizeMode="cover"
+                        />
+                        {/* </View> */}
+                        {/* </View> */}
+                        <View style={{paddingLeft: responsiveScreenWidth(3)}}>
+                          <Text
                             style={{
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              flexDirection: 'row',
+                              fontSize: responsiveScreenFontSize(2),
+                              fontWeight: '700',
+                              color: '#000',
+                              lineHeight: 40,
                             }}>
-                            <View style={HomeStyle.step}>
-                              <Image
-                                source={Compass}
-                                style={{
-                                  height: responsiveScreenHeight(4),
-                                  width: responsiveScreenWidth(7),
-                                }}
-                                resizeMode="contain"
-                              />
-                              <Text style={HomeStyle.textSteps}>
-                                {ride.pickup}
-                              </Text>
-                            </View>
-                          </View>
-
-                          <View style={{paddingLeft: responsiveScreenWidth(3)}}>
-                            <View
-                              style={{
-                                width: responsiveScreenWidth(1),
-                                height: responsiveScreenHeight(4),
-                                borderStyle: 'dashed',
-                                borderWidth: 1,
-                                borderColor: '#0C3384',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                              }}></View>
-                          </View>
-
-                          {/* End Location */}
-                          <View
+                            {ride.customer_name}
+                          </Text>
+                          <Text
                             style={{
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              flexDirection: 'row',
+                              fontSize: responsiveScreenFontSize(2),
+                              fontWeight: '500',
+                              color: '#000',
+                              lineHeight: 30,
                             }}>
-                            <View style={HomeStyle.step}>
-                              <Image
-                                source={Destination}
-                                style={{
-                                  height: responsiveScreenHeight(4),
-                                  width: responsiveScreenWidth(7),
-                                }}
-                                resizeMode="contain"
-                              />
-                              <Text style={HomeStyle.textSteps}>
-                                {ride.drop}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-
-                        <View
-                          style={{
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            paddingTop: responsiveScreenHeight(2),
-                            paddingBottom: responsiveScreenHeight(1),
-                          }}>
-                          <TouchableOpacity
-                            onPress={() => handleAcceptPress(ride)}
-                            style={{
-                              width: responsiveScreenWidth(90),
-                              padding: responsiveScreenHeight(2),
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                              backgroundColor: '#0C3384',
-                              borderRadius: responsiveScreenWidth(4),
-                            }}>
-                            <Text
-                              style={{
-                                fontWeight: '700',
-                                fontSize: responsiveScreenFontSize(2),
-                                lineHeight: 36.14,
-                                color: '#fff',
-                              }}>
-                              Accept
-                            </Text>
-                          </TouchableOpacity>
+                            {ride.customer_email}
+                          </Text>
                         </View>
                       </View>
-                    )
-                  ),
-                )}
+                    </View>
+                    <View
+                      style={{
+                        paddingTop: responsiveScreenHeight(1),
+                        borderBottomColor: 'grey',
+                        borderBottomWidth: 1,
+                        paddingBottom: responsiveScreenHeight(1),
+                      }}>
+                      <View
+                        style={{
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          flexDirection: 'row',
+                        }}>
+                        <View style={HomeStyle.step}>
+                          <Image
+                            source={Compass}
+                            style={{
+                              height: responsiveScreenHeight(4),
+                              width: responsiveScreenWidth(7),
+                            }}
+                            resizeMode="contain"
+                          />
+                          <Text style={HomeStyle.textSteps}>{ride.pickup}</Text>
+                        </View>
+                      </View>
+
+                      <View style={{paddingLeft: responsiveScreenWidth(3)}}>
+                        <View
+                          style={{
+                            width: responsiveScreenWidth(1),
+                            height: responsiveScreenHeight(4),
+                            borderStyle: 'dashed',
+                            borderWidth: 1,
+                            borderColor: '#0C3384',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}></View>
+                      </View>
+
+                      {/* End Location */}
+                      <View
+                        style={{
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          flexDirection: 'row',
+                        }}>
+                        <View style={HomeStyle.step}>
+                          <Image
+                            source={Destination}
+                            style={{
+                              height: responsiveScreenHeight(4),
+                              width: responsiveScreenWidth(7),
+                            }}
+                            resizeMode="contain"
+                          />
+                          <Text style={HomeStyle.textSteps}>{ride.drop}</Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View
+                      style={{
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        paddingTop: responsiveScreenHeight(2),
+                        paddingBottom: responsiveScreenHeight(1),
+                      }}>
+                      <TouchableOpacity
+                        onPress={() => handleAcceptPress(ride)}
+                        style={{
+                          width: responsiveScreenWidth(90),
+                          padding: responsiveScreenHeight(2),
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          backgroundColor: '#0C3384',
+                          borderRadius: responsiveScreenWidth(4),
+                        }}>
+                        <Text
+                          style={{
+                            fontWeight: '700',
+                            fontSize: responsiveScreenFontSize(2),
+                            lineHeight: 36.14,
+                            color: '#fff',
+                          }}>
+                          Accept
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
               </View>
               {rides?.map((ride, index) => (
                 <View
@@ -989,7 +1067,7 @@ const Home = ({navigation, route}) => {
                 <View style={HomeStyle.AcceptButtonContainer}>
                   <TouchableOpacity
                     style={HomeStyle.AcceptNoButton}
-                    onPress={() => setAcceptModalVisible(false)}>
+                    onPress={() => setCancelTripModal(true)}>
                     <Image
                       source={Cross}
                       style={{
@@ -1021,6 +1099,140 @@ const Home = ({navigation, route}) => {
         </Modal>
       </Modal>
 
+      <Modal visible={cancelTripModal} transparent animationType="slide">
+        <View style={HomeStyle.modalContainer}>
+          <View style={[HomeStyle.modalContent, {backgroundColor: '#0C3384'}]}>
+            <View style={{alignSelf: 'center'}}>
+              <View
+                style={{
+                  height: responsiveScreenHeight(8),
+                  width: responsiveScreenHeight(8),
+                  borderRadius: responsiveScreenHeight(4),
+                  justifyContent: 'center',
+                  alignItems: 'center',
+
+                  backgroundColor: '#396ACFFC',
+                }}>
+                <Image
+                  source={BasicTick}
+                  style={{
+                    height: responsiveScreenHeight(4),
+                    width: responsiveScreenWidth(8),
+                    tintColor: '#fff',
+                  }}
+                  resizeMode="contain"
+                />
+              </View>
+            </View>
+
+            <View style={{alignSelf: 'center'}}>
+              <Text
+                style={[
+                  HomeStyle.subTitle,
+                  {textAlign: 'center', width: responsiveScreenWidth(50)},
+                ]}>
+                Are you sure you want to cancel this trip ?
+              </Text>
+            </View>
+
+            <View style={{alignSelf: 'center'}}>
+              <TextInput
+                placeholder="Enter reason for your cancellation"
+                placeholderTextColor="#000"
+                value={reason}
+                onChangeText={setReason}
+                style={{
+                  width: responsiveScreenWidth(70),
+                  padding: responsiveScreenHeight(1),
+                  borderWidth: 1,
+                  borderColor: '#000',
+                }}
+              />
+            </View>
+
+            {/* Close Modal Button */}
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}>
+              <TouchableOpacity
+                style={[
+                  HomeStyle.button,
+                  {
+                    backgroundColor: '#0C3384',
+                    // backgroundColor: 'red',
+                    width: responsiveScreenWidth(20),
+                    borderColor: '#000',
+                    borderWidth: 1,
+                  },
+                ]}
+                onPress={() => setCancelTripModal(false)}>
+                <Text style={HomeStyle.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  HomeStyle.button,
+                  {
+                    backgroundColor: '#04B725',
+                    width: responsiveScreenWidth(20),
+                  },
+                ]}
+                onPress={handleNoPress}>
+                <Text style={HomeStyle.buttonText}>Yes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showCompleteTripModal} transparent animationType="slide">
+        <View style={HomeStyle.modalContainer}>
+          <View style={[HomeStyle.modalContent, {backgroundColor: '#0C3384'}]}>
+            <Text style={{fontSize: 18, marginBottom: 10, color: '#000'}}>
+              Trip Completed?
+            </Text>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#04B725',
+                padding: 10,
+                borderRadius: 5,
+                marginTop: 10,
+              }}
+              onPress={handleCompleteTrip}>
+              <Text
+                style={{
+                  color: '#fff',
+                  fontSize: responsiveScreenFontSize(2),
+                  fontWeight: '400',
+                }}>
+                Yes, Complete Trip
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: 'red',
+                padding: 10,
+                borderRadius: 5,
+                marginTop: 10,
+              }}
+              onPress={() => setShowCompleteTripModal(false)}>
+              <Text
+                style={{
+                  color: '#fff',
+                  fontSize: responsiveScreenFontSize(2),
+                  fontWeight: '400',
+                }}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Map Tracking  Modal */}
       <Modal
         transparent
@@ -1041,7 +1253,6 @@ const Home = ({navigation, route}) => {
                 borderRadius: responsiveScreenWidth(4),
               }}></TouchableOpacity>
             {rideDetailsArray?.map((ride, index) => (
-              // console.log('Ride before passing====>>>', ride),
               <View
                 style={{
                   paddingTop: responsiveScreenHeight(4),
@@ -1139,7 +1350,10 @@ const Home = ({navigation, route}) => {
                         paddingLeft: responsiveScreenWidth(2),
                         paddingRight: responsiveScreenWidth(2),
                       }}>
-                      <TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() =>
+                          Linking.openURL(`tel:${ride.customer_phone}`)
+                        }>
                         <View
                           style={{
                             height: responsiveScreenHeight(4),
@@ -1162,7 +1376,10 @@ const Home = ({navigation, route}) => {
                       </TouchableOpacity>
                     </View>
                     <View>
-                      <TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() =>
+                          Linking.openURL(`sms:${ride.customer_phone}`)
+                        }>
                         <View
                           style={{
                             height: responsiveScreenHeight(4),
@@ -1281,7 +1498,7 @@ const Home = ({navigation, route}) => {
                     </View>
                   </View>
                 </View>
-                <View
+                {/* <View
                   style={{
                     justifyContent: 'flex-end',
                     alignItems: 'flex-end',
@@ -1297,18 +1514,17 @@ const Home = ({navigation, route}) => {
                       resizeMode="contain"
                     />
                   </TouchableOpacity>
-                </View>
+                </View> */}
                 <View
                   style={{
                     justifyContent: 'center',
                     alignItems: 'center',
                     paddingTop: responsiveScreenHeight(6),
                     paddingBottom: responsiveScreenHeight(10),
+                    marginBottom: responsiveScreenHeight(10),
                   }}>
                   <TouchableOpacity
                     onPress={() => {
-                      console.log('isArrived:', isArrived);
-                      console.log('ride:', ride);
                       if (!isArrived) {
                         setArrivedLocationModal(true);
                       } else {
@@ -1397,7 +1613,7 @@ const Home = ({navigation, route}) => {
                       borderWidth: 1,
                     },
                   ]}
-                  onPress={() => setOnlineModalVisible(false)}>
+                  onPress={() => setCancelTripModal(true)}>
                   <Text style={HomeStyle.buttonText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -1476,7 +1692,7 @@ const Home = ({navigation, route}) => {
                       borderWidth: 1,
                     },
                   ]}
-                  onPress={() => setOnlineModalVisible(false)}>
+                  onPress={() => setArrivedUpdateModal(false)}>
                   <Text style={HomeStyle.buttonText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -1489,10 +1705,6 @@ const Home = ({navigation, route}) => {
                   ]}
                   onPress={() => {
                     setStartRideView(arrivedUpdateModal); // Pass ride data
-                    console.log(
-                      'Please console startrideview====>>>',
-                      StartRideView,
-                    );
 
                     // setArrivedUpdateModal(null);
                     setTimeout(() => {
@@ -1511,7 +1723,6 @@ const Home = ({navigation, route}) => {
             // animationType="none"
             // onRequestClose={closeModal} // Handles back button on Android
           >
-            {/* {console.log('SelectedRide=====>>>>', selectedRide)} */}
             <View style={HomeStyle.modalContainer}>
               <Animated.View
                 style={[
@@ -1780,7 +1991,7 @@ const Home = ({navigation, route}) => {
                         </View>
                       </View>
                     </View>
-                    <View
+                    {/* <View
                       style={{
                         justifyContent: 'flex-end',
                         alignItems: 'flex-end',
@@ -1796,7 +2007,7 @@ const Home = ({navigation, route}) => {
                           resizeMode="contain"
                         />
                       </TouchableOpacity>
-                    </View>
+                    </View> */}
                     <View
                       style={{
                         justifyContent: 'center',
@@ -1831,8 +2042,14 @@ const Home = ({navigation, route}) => {
             </View>
             <Modal visible={modalVisible} transparent animationType="slide">
               <View style={HomeStyle.modalContainer}>
-                <View style={HomeStyle.modalContent}>
-                  <Text style={HomeStyle.title}>Enter OTP</Text>
+                <View
+                  style={[
+                    HomeStyle.modalContent,
+                    {width: responsiveScreenWidth(95)},
+                  ]}>
+                  <Text style={[HomeStyle.title, {textAlign: 'center'}]}>
+                    Enter OTP
+                  </Text>
                   <Text style={HomeStyle.subTitle}>
                     Enter the otp display in customers mobile to start the ride{' '}
                   </Text>
@@ -1865,11 +2082,14 @@ const Home = ({navigation, route}) => {
                     />
 
                     {/* Close Modal Button */}
-                    <TouchableOpacity
-                      style={HomeStyle.button}
-                      onPress={handleConfirmOtp}>
-                      <Text style={HomeStyle.buttonText}>Confirm</Text>
-                    </TouchableOpacity>
+                    <View
+                      style={{justifyContent: 'center', alignItems: 'center'}}>
+                      <TouchableOpacity
+                        style={HomeStyle.button}
+                        onPress={handleConfirmOtp}>
+                        <Text style={HomeStyle.buttonText}>Confirm</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
               </View>
@@ -1904,6 +2124,274 @@ const Home = ({navigation, route}) => {
             </Modal>
           </Modal>
         </Modal>
+      </Modal>
+
+      {showResponseModal && (
+        <Modal
+          transparent={true}
+          visible={showResponseModal}
+          animationType="slide"
+          onRequestClose={() => {
+            setShowResponseModal(false);
+            setCompleteTripOtpModal(true);
+            // setEndKMVisible(true);
+          }}
+          onDismiss={() => {
+            setCompleteTripOtpModal(true);
+
+            // setEndKMVisible(true);
+          }}>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              setShowResponseModal(false);
+              setCompleteTripOtpModal(true);
+              // setEndKMVisible(true);
+            }}>
+            <View style={HomeStyle.RideBoxView}>
+              <View style={{paddingBottom: responsiveScreenHeight(4)}}>
+                <View
+                  style={[
+                    HomeStyle.RideBox,
+                    {
+                      height: responsiveScreenHeight(90),
+                      backgroundColor: '#fff',
+                    },
+                  ]}>
+                  <View>
+                    <Text style={HomeStyle.TripTypeText}>
+                      S.No :{completeTripResponse?.trip.id}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={HomeStyle.TripTypeText}>
+                      Customer Name :{completeTripResponse?.trip.customer_name}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={HomeStyle.TripTypeText}>
+                      Booking Ref No :
+                      {completeTripResponse?.trip.booking_ref_no}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={HomeStyle.TripTypeText}>
+                      Pickup :{completeTripResponse?.trip.pickup}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={HomeStyle.TripTypeText}>
+                      Drop :{completeTripResponse?.trip.drop}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={HomeStyle.TripTypeText}>
+                      Pickup Date :
+                      {moment(completeTripResponse?.trip.pickup_time).format(
+                        'DD-MM-YYYY',
+                      )}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={HomeStyle.TripTypeText}>
+                      Pickup Time :
+                      {moment(completeTripResponse?.trip.pickup_time).format(
+                        'hh:mm A',
+                      )}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={HomeStyle.TripTypeText}>
+                      Package :{completeTripResponse?.trip.package_type}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={HomeStyle.TripTypeText}>
+                      No of persons :{completeTripResponse?.trip.no_of_persons}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={HomeStyle.TripTypeText}>
+                      Estimate fare and time :
+                      {completeTripResponse?.trip.total_rupees}
+                      {moment(completeTripResponse?.drop_time).format(
+                        'hh:mm A',
+                      )}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={HomeStyle.TripTypeText}>
+                      Car Type :{completeTripResponse?.trip.car_type}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={HomeStyle.TripTypeText}>
+                      Trip Type :{completeTripResponse?.trip.trip_type}
+                    </Text>
+                  </View>
+                  <View style={HomeStyle.ArrivalStatusRow}>
+                    <View>
+                      <Text style={HomeStyle.ArrivalStatusText}>
+                        Arrival Status :
+                      </Text>
+                    </View>
+                    <View style={HomeStyle.ArrivalStatusRowView}>
+                      <View style={HomeStyle.FinishedView}>
+                        <View style={HomeStyle.FinishedTextView}>
+                          <Text style={HomeStyle.FinishedText}>
+                            {completeTripResponse?.trip.status}
+                          </Text>
+                        </View>
+                        <View style={HomeStyle.FinishTripView}>
+                          <View style={HomeStyle.FinishTripTextView}>
+                            <Text style={HomeStyle.FinishTripText}>
+                              Finish Trip
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                      <View style={HomeStyle.TollMoneyView}>
+                        <View style={HomeStyle.TollMoneyTextView}>
+                          <Text style={HomeStyle.TollMoneyText}>
+                            Toll money
+                          </Text>
+                        </View>
+                        <View style={HomeStyle.PrintBillView}>
+                          <View style={HomeStyle.PrintBillTextView}>
+                            <Text style={HomeStyle.PrintBillText}>
+                              Print Bill
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      )}
+      {completeTripOtpModal && (
+        <Modal
+          visible={completeTripOtpModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => {
+            setEndKMVisible(true);
+          }}
+          onDismiss={() => {
+            setEndKMVisible(true);
+          }}>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              setCompleteTripOtpModal(false);
+              setEndKMVisible(true);
+            }}>
+            <View style={HomeStyle.modalContainer}>
+              <View
+                style={[
+                  HomeStyle.modalContent,
+                  {width: responsiveScreenWidth(95)},
+                ]}>
+                <Text style={[HomeStyle.title, {textAlign: 'center'}]}>
+                  Enter OTP
+                </Text>
+                <Text style={HomeStyle.subTitle}>
+                  Enter the otp display in customers mobile to start the ride{' '}
+                </Text>
+
+                {/* OTP Input inside Modal */}
+
+                <View>
+                  <CodeField
+                    ref={completeTripRef}
+                    {...completeTripProps}
+                    value={completeTripOtpValue}
+                    onChangeText={text => setCompleteTripOtpValue(String(text))}
+                    cellCount={CELL_COUNT}
+                    rootStyle={HomeStyle.codeFieldRoot}
+                    keyboardType="number-pad"
+                    textContentType="oneTimeCode"
+                    renderCell={({index, symbol, isFocused}) => (
+                      <View
+                        key={index}
+                        style={[
+                          HomeStyle.cell,
+                          isFocused && HomeStyle.focusCell,
+                        ]}
+                        onLayout={getCompleteTripCellOnLayoutHandler(index)}>
+                        <Text style={HomeStyle.cellText}>{symbol || ' '}</Text>
+                      </View>
+                    )}
+                  />
+
+                  {/* Close Modal Button */}
+                  <View
+                    style={{justifyContent: 'center', alignItems: 'center'}}>
+                    <TouchableOpacity
+                      style={HomeStyle.button}
+                      onPress={handleConfirmCompleteOtp}>
+                      <Text style={HomeStyle.buttonText}>Confirm</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      )}
+      {endKmVisible && (
+        <Modal
+          visible={endKmVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => {
+            setPaymentAmountModal(true);
+          }}
+          onDismiss={() => {
+            setPaymentAmountModal(true);
+          }}>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              setEndKMVisible(false);
+              setPaymentAmountModal(true);
+            }}>
+            <View style={HomeStyle.modalContainer}>
+              <View style={HomeStyle.modalContent}>
+                <Text style={HomeStyle.title}>Enter Km</Text>
+                <TextInput
+                  label="Ending Km"
+                  mode="outlined"
+                  keyboardType="numeric"
+                  value={endKmValue}
+                  onChangeText={setEndKmValue}
+                  style={HomeStyle.input}
+                />
+                <TouchableOpacity
+                  onPress={handleSubmitEndKM}
+                  style={[
+                    HomeStyle.button,
+                    {
+                      alignSelf: 'center',
+                      width: responsiveScreenWidth(70),
+                    },
+                  ]}>
+                  <Text style={HomeStyle.buttonText}>Confirm</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      )}
+
+      <Modal visible={paymentAmountModal} transparent animationType="slide">
+        <TouchableWithoutFeedback onPress={() => setPaymentAmountModal(false)}>
+          <View style={HomeStyle.modalContainer}>
+            <View style={HomeStyle.modalContent}>
+              <ImageBackground source={ZigzagCircle}></ImageBackground>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </View>
   );

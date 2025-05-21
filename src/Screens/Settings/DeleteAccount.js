@@ -52,7 +52,7 @@ const DeleteAccount = () => {
       <StatusBar barStyle="light-content" backgroundColor="#0C3384" animated />
       {/* Header */}
       <View style={DeleteAccountStyle.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Image
             source={Left}
             resizeMode="contain"

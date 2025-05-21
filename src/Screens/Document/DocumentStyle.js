@@ -28,9 +28,34 @@ const DocumentStyle = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
-    padding: 10,
+    padding: responsiveScreenHeight(2),
     borderRadius: 5,
+    width: responsiveScreenWidth(80),
+    color: '#000',
+    fontSize: responsiveScreenFontSize(2),
+    fontWeight: '400',
   },
   MainContainer: {flex: 1},
+  saveButton: {
+    backgroundColor: '#007BFF',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    marginTop: 20,
+    alignItems: 'center',
+    width: responsiveScreenWidth(80),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  listItemText: {
+    color: '#000',
+    fontSize: responsiveScreenFontSize(2),
+    fontWeight: '400',
+  },
 });
 export default DocumentStyle;

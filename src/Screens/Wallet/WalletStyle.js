@@ -161,7 +161,7 @@ const WalletStyle = StyleSheet.create({
   AddTollRequestButton: {
     backgroundColor: '#ebd1ff',
     width: responsiveScreenWidth(90),
-    padding: responsiveScreenWidth(1),
+    padding: responsiveScreenWidth(2),
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: responsiveScreenWidth(6),

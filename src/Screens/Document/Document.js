@@ -26,13 +26,26 @@ import {
   documentDownload,
 } from '../../redux/Slices/DocumentSlice';
 import {useDispatch, useSelector} from 'react-redux';
-import {responsiveScreenWidth} from 'react-native-responsive-dimensions';
+import {
+  responsiveScreenHeight,
+  responsiveScreenWidth,
+} from 'react-native-responsive-dimensions';
 import Pdf from 'react-native-pdf';
 import RNFetchBlob from 'react-native-blob-util';
 
 const Document = () => {
-  const [fileName, setFileName] = useState('');
-  const [selectedDocumentUrl, setSelectedDocumentUrl] = useState(null);
+  const [rcFileName, setRCFileName] = useState('');
+  const [roadTaxFileName, setRoadTaxFileName] = useState('');
+  const [permitFileName, setPermitFileName] = useState('');
+  const [driverLicenseFileName, setDriverLicenseFileName] = useState('');
+  const [driverBatchFileName, setDriverBatchFileName] = useState('');
+  const [rcDocument, setRCDocument] = useState(null);
+  const [roadTaxDocument, setRoadTaxDocument] = useState(null);
+  const [permitDocument, setPermitDocument] = useState(null);
+  const [driverLicenseDocument, setDriverLicenseDocument] = useState(null);
+  const [driverBatchDocument, setDriverBatchDocument] = useState(null);
+
+  const [selectedRCDocumentUrl, setSelectedRCDocumentUrl] = useState(null);
 
   const navigation = useNavigation();
 
@@ -49,6 +62,7 @@ const Document = () => {
   const secondObject = data?.[1]?.data || null;
   // console.log("Second Object:", secondObject);
   const documents = secondObject ? [secondObject] : [];
+
   const renderItem = ({item}) => {
     // console.log("Itemsss====>>>",item)
     return (
@@ -62,14 +76,13 @@ const Document = () => {
     );
   };
 
-  const pickDocument = async () => {
+  const pickRCDocument = async () => {
     try {
       const result = await DocumentPicker.pickSingle({
-        type: [DocumentPicker.types.allFiles], // Supports all file types
+        type: [DocumentPicker.types.pdf, DocumentPicker.types.images], // pdf, jpg, png
       });
-
-      // console.log(result);
-      setFileName(result.name || 'Unknown File');
+      setRCFileName(result.name || 'Unknown File');
+      setRCDocument(result); // save full file object
     } catch (err) {
       if (DocumentPicker.isCancel(err)) {
         console.log('User cancelled document picker');
@@ -79,6 +92,142 @@ const Document = () => {
           'Something went wrong while picking the document.',
         );
       }
+    }
+  };
+
+  const pickRoadTaxDocument = async () => {
+    try {
+      const result = await DocumentPicker.pickSingle({
+        type: [DocumentPicker.types.pdf, DocumentPicker.types.images], // pdf, jpg, png
+      });
+      setRoadTaxFileName(result.name || 'Unknown File');
+      setRoadTaxDocument(result); // save full file object
+    } catch (err) {
+      if (DocumentPicker.isCancel(err)) {
+        console.log('User cancelled document picker');
+      } else {
+        Alert.alert(
+          'Error',
+          'Something went wrong while picking the document.',
+        );
+      }
+    }
+  };
+
+  const pickPermitDocument = async () => {
+    try {
+      const result = await DocumentPicker.pickSingle({
+        type: [DocumentPicker.types.pdf, DocumentPicker.types.images], // pdf, jpg, png
+      });
+      setPermitFileName(result.name || 'Unknown File');
+      setPermitDocument(result); // save full file object
+    } catch (err) {
+      if (DocumentPicker.isCancel(err)) {
+        console.log('User cancelled document picker');
+      } else {
+        Alert.alert(
+          'Error',
+          'Something went wrong while picking the document.',
+        );
+      }
+    }
+  };
+
+  const pickDriverLicenseDocument = async () => {
+    try {
+      const result = await DocumentPicker.pickSingle({
+        type: [DocumentPicker.types.pdf, DocumentPicker.types.images], // pdf, jpg, png
+      });
+      setDriverLicenseFileName(result.name || 'Unknown File');
+      setDriverLicenseDocument(result); // save full file object
+    } catch (err) {
+      if (DocumentPicker.isCancel(err)) {
+        console.log('User cancelled document picker');
+      } else {
+        Alert.alert(
+          'Error',
+          'Something went wrong while picking the document.',
+        );
+      }
+    }
+  };
+
+  const pickDriverBatchDocument = async () => {
+    try {
+      const result = await DocumentPicker.pickSingle({
+        type: [DocumentPicker.types.pdf, DocumentPicker.types.images], // pdf, jpg, png
+      });
+      setDriverBatchFileName(result.name || 'Unknown File');
+      setDriverBatchDocument(result); // save full file object
+    } catch (err) {
+      if (DocumentPicker.isCancel(err)) {
+        console.log('User cancelled document picker');
+      } else {
+        Alert.alert(
+          'Error',
+          'Something went wrong while picking the document.',
+        );
+      }
+    }
+  };
+
+  const handleSaveDocuments = async () => {
+    if (
+      !rcDocument ||
+      !roadTaxDocument ||
+      !permitDocument ||
+      !driverLicenseDocument ||
+      !driverBatchDocument
+    ) {
+      Alert.alert('Missing', 'Please select all documents before saving.');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('rc_book', {
+        uri: rcDocument.uri,
+        type: rcDocument.type,
+        name: rcDocument.name,
+      });
+      formData.append('road_tax', {
+        uri: roadTaxDocument.uri,
+        type: roadTaxDocument.type,
+        name: roadTaxDocument.name,
+      });
+      formData.append('driving_licence', {
+        uri: driverLicenseDocument.uri,
+        type: driverLicenseDocument.type,
+        name: driverLicenseDocument.name,
+      });
+      formData.append('permit', {
+        uri: permitDocument.uri,
+        type: permitDocument.type,
+        name: permitDocument.name,
+      });
+      formData.append('drivers_batch', {
+        uri: driverBatchDocument.uri,
+        type: driverBatchDocument.type,
+        name: driverBatchDocument.name,
+      });
+
+      await dispatch(documentSave(formData)).unwrap();
+      Alert.alert('Success', 'Documents saved successfully.');
+
+      setRCFileName('');
+      setRoadTaxFileName('');
+      setPermitFileName('');
+      setDriverLicenseFileName('');
+      setDriverBatchFileName('');
+
+      setRCDocument(null);
+      setRoadTaxDocument(null);
+      setPermitDocument(null);
+      setDriverLicenseDocument(null);
+      setDriverBatchDocument(null);
+    } catch (error) {
+      console.log('Save Error:', error);
+      Alert.alert('Error', 'Failed to save documents.');
     }
   };
 
@@ -95,17 +244,15 @@ const Document = () => {
             style={DocumentStyle.backIcon}
           />
         </TouchableOpacity>
-        <Text style={DocumentStyle.headerTitle}>OutStation Upcoming Rides</Text>
+        <Text style={DocumentStyle.headerTitle}>Document</Text>
       </View>
-      <TouchableOpacity onPress={pickDocument}>
-        <TextInput
-          value={fileName}
-          placeholder="Select a document"
-          editable={false} // Prevent manual input
-          style={DocumentStyle.input}
-        />
-      </TouchableOpacity>
-      <View style={{justifyContent: 'center', alignItems: 'center'}}>
+      <View
+        style={{
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingTop: responsiveScreenHeight(4),
+          paddingBottom: responsiveScreenHeight(4),
+        }}>
         {/* Loading Indicator */}
         {loading ? (
           <ActivityIndicator
@@ -123,11 +270,11 @@ const Document = () => {
           />
         )}
         {/* WebView to show selected document */}
-        {selectedDocumentUrl && (
+        {selectedRCDocumentUrl && (
           <View style={{height: Dimensions.get('window').height * 0.6}}>
             <WebView
               source={{
-                uri: `https://docs.google.com/gview?embedded=true&url=${selectedDocumentUrl}`,
+                uri: `https://docs.google.com/gview?embedded=true&url=${selectedRCDocumentUrl}`,
               }}
               style={{flex: 1}}
               startInLoadingState={true}
@@ -141,6 +288,99 @@ const Document = () => {
             />
           </View>
         )}
+      </View>
+      <View
+        style={{
+          width: responsiveScreenWidth(100),
+
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+        <TouchableOpacity onPress={pickRCDocument}>
+          <TextInput
+            value={rcFileName}
+            placeholder="Select RC Book document"
+            editable={false} // Prevent manual input
+            style={DocumentStyle.input}
+          />
+        </TouchableOpacity>
+      </View>
+      <View
+        style={{
+          width: responsiveScreenWidth(100),
+          paddingTop:responsiveScreenHeight(2),
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+        <TouchableOpacity onPress={pickRoadTaxDocument}>
+          <TextInput
+            value={roadTaxFileName}
+            placeholder="Select Road Tax document"
+            editable={false} // Prevent manual input
+            style={DocumentStyle.input}
+          />
+        </TouchableOpacity>
+      </View>
+      <View
+        style={{
+          width: responsiveScreenWidth(100),
+          paddingTop:responsiveScreenHeight(2),
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+        <TouchableOpacity onPress={pickPermitDocument}>
+          <TextInput
+            value={permitFileName}
+            placeholder="Select Driving License document"
+            editable={false} // Prevent manual input
+            style={DocumentStyle.input}
+          />
+        </TouchableOpacity>
+      </View>
+      <View
+        style={{
+          width: responsiveScreenWidth(100),
+          paddingTop:responsiveScreenHeight(2),
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+        <TouchableOpacity onPress={pickDriverLicenseDocument}>
+          <TextInput
+            value={driverLicenseFileName}
+            placeholder="Select Permit document"
+            editable={false} // Prevent manual input
+            style={DocumentStyle.input}
+          />
+        </TouchableOpacity>
+      </View>
+      <View
+        style={{
+          width: responsiveScreenWidth(100),
+paddingTop:responsiveScreenHeight(2),
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+        <TouchableOpacity onPress={pickDriverBatchDocument}>
+          <TextInput
+            value={driverBatchFileName}
+            placeholder="Select Driver Batch document"
+            editable={false} // Prevent manual input
+            style={DocumentStyle.input}
+          />
+        </TouchableOpacity>
+      </View>
+      <View
+        style={{
+          width: responsiveScreenWidth(100),
+
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+        <TouchableOpacity
+          style={DocumentStyle.saveButton}
+          onPress={handleSaveDocuments}>
+          <Text style={DocumentStyle.saveButtonText}>Save</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );

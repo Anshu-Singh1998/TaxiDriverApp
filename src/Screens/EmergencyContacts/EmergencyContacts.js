@@ -59,6 +59,7 @@ const EmergencyContacts = () => {
 
     Contacts.getAll()
       .then(contactList => {
+        console.log("Contactess======>>>>",contactList)
         setContacts(contactList);
       })
       .catch(err => {

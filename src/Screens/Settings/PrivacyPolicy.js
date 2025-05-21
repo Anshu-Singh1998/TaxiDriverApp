@@ -32,7 +32,7 @@ const PrivacyPolicy = () => {
       />
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Image source={Left} resizeMode="contain" style={styles.backIcon} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Privacy Policy</Text>
@@ -211,7 +211,7 @@ const PrivacyPolicy = () => {
             </Text>
           </View>
           <View style={styles.ChangesToPolicyPrivacyPolicyTextView}>
-            <Text style={ChangesToPolicyPrivacyPolicyText}>
+            <Text style={styles.ChangesToPolicyPrivacyPolicyText}>
               We may update this Privacy Policy to reflect changes in our
               practices or legal requirements . We encourage you to review this
               page periodically for updates.

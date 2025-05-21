@@ -190,7 +190,7 @@ const Language = () => {
         animated={true}
       />
       <View style={LanguageStyle.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Image
             source={Left}
             resizeMode="contain"

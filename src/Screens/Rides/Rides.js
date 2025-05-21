@@ -41,6 +41,7 @@ const Rides = () => {
   }, [dispatch]);
   // console.log('Ongoing rides====>>>>', ongoingTrips);
 
+  
   return (
     <View style={RideStyle.MainContainerView}>
       <View>

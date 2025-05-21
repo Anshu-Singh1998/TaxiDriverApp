@@ -124,6 +124,7 @@ const HomeStyle = StyleSheet.create({
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
+    lineHeight: 24,
   },
   modalContainer: {
     flex: 1,
@@ -212,6 +213,8 @@ const HomeStyle = StyleSheet.create({
   textSteps: {
     fontSize: 14,
     color: '#333',
+    flexShrink: 1,
+    width: responsiveScreenWidth(70),
   },
   line: {
     marginLeft: 9, // Align with icons
@@ -336,7 +339,7 @@ const HomeStyle = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.3,
     shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
   },
   overViewContainer: {
     position: 'absolute',
@@ -350,7 +353,132 @@ const HomeStyle = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.3,
     shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
+  },
+  ValueText: {
+    fontSize: responsiveScreenFontSize(2),
+    color: '#000',
+    fontWeight: '300',
+  },
+  KeyText: {
+    fontSize: responsiveScreenFontSize(1.5),
+    color: '#000',
+    fontWeight: '500',
+  },
+  RowKeyValue: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  RowKeyValueView: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  TollMoneyView: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  PrintBillView: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  PrintBillTextView: {
+    width: responsiveScreenWidth(25),
+    height: responsiveScreenHeight(4),
+    borderRadius: responsiveScreenWidth(2),
+    justifyContent: 'center',
+    alignItems: 'center',
+    // backgroundColor: '#FF0000',
+    backgroundColor: '#3242ab',
+  },
+  FinishTripText: {
+    fontWeight: '400',
+    fontSize: responsiveScreenFontSize(2),
+    lineHeight: 36,
+    color: '#fff',
+  },
+  PrintBillText: {
+    fontWeight: '400',
+    fontSize: responsiveScreenFontSize(2),
+    lineHeight: 36,
+    color: '#fff',
+  },
+  FinishTripTextView: {
+    width: responsiveScreenWidth(25),
+    height: responsiveScreenHeight(4),
+    borderRadius: responsiveScreenWidth(2),
+    justifyContent: 'center',
+    alignItems: 'center',
+    // backgroundColor: '#FF0000',
+    backgroundColor: '#3242ab',
+  },
+  FinishTripView: {right: -10},
+  FinishedText: {
+    fontWeight: '400',
+    fontSize: responsiveScreenFontSize(2),
+    lineHeight: 36,
+    color: '#fff',
+  },
+  FinishedTextView: {
+    width: responsiveScreenWidth(25),
+    height: responsiveScreenHeight(4),
+    borderRadius: responsiveScreenWidth(2),
+    justifyContent: 'center',
+    alignItems: 'center',
+    // backgroundColor: '#04B725',
+    backgroundColor: '#5894f5',
+  },
+  TollMoneyTextView: {
+    width: responsiveScreenWidth(25),
+    height: responsiveScreenHeight(4),
+    borderRadius: responsiveScreenWidth(2),
+    justifyContent: 'center',
+    alignItems: 'center',
+    // backgroundColor: '#04B725',
+    backgroundColor: '#5894f5',
+  },
+  TollMoneyText: {
+    fontWeight: '400',
+    fontSize: responsiveScreenFontSize(2),
+    lineHeight: 36,
+    color: '#fff',
+  },
+  FinishedView: {
+    flexDirection: 'row',
+
+    paddingBottom: responsiveScreenHeight(2),
+  },
+  ArrivalStatusRowView: {paddingTop: responsiveScreenHeight(4)},
+  ArrivalStatusText: {
+    fontWeight: '400',
+    fontSize: responsiveScreenFontSize(2),
+    lineHeight: 36,
+    color: '#000',
+  },
+  ArrivalStatusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  TripTypeText: {
+    fontWeight: '400',
+    fontSize: 18,
+    lineHeight: 36,
+    color: '#000',
+  },
+  RideBox: {
+    borderWidth: 1,
+    borderColor: '#000',
+    width: responsiveScreenWidth(90),
+    padding: responsiveScreenHeight(2),
+  },
+  RideBoxView: {
+    paddingTop: responsiveScreenHeight(4),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 export default HomeStyle;

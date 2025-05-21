@@ -16,6 +16,7 @@ import otpReducer from "../Slices/otpSlice"
 import availabilityReducer from "../Slices/AvailabilitySlice"
 import kmReducer from "../Slices/KilometerSlice"
 import driverEarningReducer from "../Slices/DriverEarningSlice"
+import earningReducer from "../Slices/EarningSlice"
 
 
 const store = configureStore({
@@ -36,7 +37,8 @@ const store = configureStore({
     otp:otpReducer,
     availability:availabilityReducer,
     kilometer:kmReducer,
-    driverEarning:driverEarningReducer
+    driverEarning:driverEarningReducer,
+    earning:earningReducer
   },
 });
 

@@ -76,19 +76,7 @@
     "react-test-renderer": "^18.3.1",
     "typescript": "5.0.4"
   },
-  "jest": {
-    "preset": "react-native",
-    "setupFilesAfterEnv": [
-      "@testing-library/jest-native/extend-expect",
-      "<rootDir>/jest.setup.js"
-    ],
-    "transformIgnorePatterns": [
-      "node_modules/(?!react-native|react-native-reanimated|@react-native)"
-    ],
-    "moduleNameMapper": {
-      "\\.(jpg|jpeg|png|svg)$": "<rootDir>/__mocks__/fileMock.js"
-    }
-  },
+ 
   "engines": {
     "node": ">=18"
   }

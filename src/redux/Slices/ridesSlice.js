@@ -5,6 +5,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const initialState = {
   tripData: null,
   ongoingTrips: [],
+  completed: [],
+  cancelled: [],
   loading: false,
   error: null,
 };
@@ -52,10 +54,43 @@ export const fetchOngoingTrips = createAsyncThunk(
   },
 );
 
+export const fetchCompletedTrips = createAsyncThunk(
+  'trip/fetchCompletedTrips',
+  async ({trip_id}, thunkAPI) => {
+    console.log("Trip if for trip complete====>>>",trip_id)
+    try {
+      const response = await Api.post('trips/complete',{trip_id});
+      console.log('Response dataaa for trip complete====>>>', response.data);
+
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+    }
+  },
+);
+
+export const fetchCancelledTrips = createAsyncThunk(
+  'trip/fetchCancelledTrips',
+  async ({ trip_id, cancel_type, cancel_reason }, thunkAPI) => {
+    try {
+      const response = await Api.post('trips/cancel', {
+        trip_id,
+        cancel_type,
+        cancel_reason,
+      });
+      console.log('Response dataaa for trip cancel====>>>', response.data);
+      return response.data.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+
 export const markTripArrived = createAsyncThunk(
   'trip/markTripArrived',
   async (tripId, thunkAPI) => {
-    console.log("Trip id before arrived api gets hit ====>>>",tripId)
+    console.log('Trip id before arrived api gets hit ====>>>', tripId);
     try {
       const response = await Api.get(`trips/arrived?id=${tripId}`);
       console.log('Response of arrived api =====>>>>', response.data);
@@ -93,6 +128,30 @@ const ridesSlice = createSlice({
         state.ongoingTrips = action.payload;
       })
       .addCase(fetchOngoingTrips.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchCompletedTrips.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCompletedTrips.fulfilled, (state, action) => {
+        state.loading = false;
+        state.completed = action.payload;
+      })
+      .addCase(fetchCompletedTrips.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchCancelledTrips.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCancelledTrips.fulfilled, (state, action) => {
+        state.loading = false;
+        state.cancelled = action.payload;
+      })
+      .addCase(fetchCancelledTrips.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

@@ -70,5 +70,8 @@ const ChangePasswordStyle = StyleSheet.create({
       fontSize: responsiveScreenFontSize(2),
       color: '#fff',
     },
+    SaveBtn:{
+      marginTop:responsiveScreenHeight(10)
+    }
   });
   export default ChangePasswordStyle

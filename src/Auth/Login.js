@@ -26,10 +26,9 @@ const Login = () => {
   const dispatch = useDispatch();
   const {loading, error, user} = useSelector(state => state.login);
 
-
   const handleLogin = () => {
-    console.log("Button is being pressed",email , password)
-    dispatch(loginUser({ email, password })).then((res) => {
+    console.log('Button is being pressed', email, password);
+    dispatch(loginUser({email, password})).then(res => {
       if (res.meta.requestStatus === 'fulfilled') {
         navigation.navigate('Home');
       }
@@ -73,20 +72,31 @@ const Login = () => {
           </Text>
         </View>
         <View style={{paddingTop: responsiveScreenHeight(2)}}>
-          <TextInput
+          <View
             style={{
               width: responsiveScreenWidth(90),
-              padding: responsiveScreenHeight(2),
               borderColor: '#0C3384',
               borderWidth: 1,
-              color: '000',
               borderRadius: responsiveScreenWidth(4),
-            }}
-            placeholder="Email"
-            placeholderTextColor="#000"
-            value={email}
-            onChangeText={setEmail}
-          />
+              backgroundColor: '#fff',
+              overflow: 'hidden',
+            }}>
+            <TextInput
+              style={{
+                padding: responsiveScreenHeight(2),
+                fontSize: responsiveScreenFontSize(2),
+                color: '#000',
+                backgroundColor: 'transparent',
+              }}
+              placeholder="Email"
+              placeholderTextColor="#000"
+              value={email}
+              onChangeText={setEmail}
+              autoComplete="email"
+              textContentType="emailAddress"
+              importantForAutofill="yes"
+            />
+          </View>
         </View>
         <View>
           <Text
@@ -101,20 +111,31 @@ const Login = () => {
           </Text>
         </View>
         <View style={{paddingTop: responsiveScreenHeight(2)}}>
-          <TextInput
+          <View
             style={{
               width: responsiveScreenWidth(90),
-              padding: responsiveScreenHeight(2),
               borderColor: '#0C3384',
-              color: '#000',
               borderWidth: 1,
               borderRadius: responsiveScreenWidth(4),
-            }}
-            placeholder="Password"
-            placeholderTextColor="#000"
-            value={password}
-            onChangeText={setPassword}
-          />
+              backgroundColor: '#fff', 
+              overflow: 'hidden', 
+            }}>
+            <TextInput
+              style={{
+                padding: responsiveScreenHeight(2),
+                fontSize: responsiveScreenFontSize(2),
+                color: '#000',
+                backgroundColor: 'transparent', 
+              }}
+              placeholder="Password"
+              placeholderTextColor="#000"
+              value={password}
+              onChangeText={setPassword}
+              autoComplete="password"
+              textContentType="Password"
+              importantForAutofill="yes"
+            />
+          </View>
         </View>
 
         <View

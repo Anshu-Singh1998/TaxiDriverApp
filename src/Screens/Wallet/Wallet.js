@@ -46,7 +46,7 @@ const Wallet = ({navigation}) => {
               style={WalletStyle.backIcon}
             />
           </TouchableOpacity>
-          <Text style={WalletStyle.headerTitle}>Emergency Contacts</Text>
+          <Text style={WalletStyle.headerTitle}>Wallet</Text>
         </View>
         <ScrollView>
           <View>

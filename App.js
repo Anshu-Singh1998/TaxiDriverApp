@@ -9,8 +9,6 @@ import SignIn from './src/Auth/SignIn';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {Provider} from 'react-redux';
 import store from './src/redux/store/store';
-// import {I18nextProvider} from 'react-i18next';
-// import i18n from './src/locales/i18n';
 
 const Stack = createNativeStackNavigator();
 
@@ -21,42 +19,22 @@ const Auth = () => (
       headerShown: false,
       animation: 'none',
     }}>
-    <Stack.Screen
-      name="LoginSplash"
-      component={LoginSplash}
-      options={{header: () => null}}
-    />
-
-    <Stack.Screen
-      name="Login"
-      component={Login}
-      options={{header: () => null}}
-    />
+    <Stack.Screen name="LoginSplash" component={LoginSplash} />
+    <Stack.Screen name="Login" component={Login} />
   </Stack.Navigator>
 );
 
 const App = () => {
-  const [isSplashComplete, setIsSplashComplete] = useState(false);
-  useEffect(() => {
-    // Show Splash for 5 seconds
-    setTimeout(() => {
-      setIsSplashComplete(true);
-    }, 5000);
-  }, []);
   return (
     <Provider store={store}>
-     
-        <NavigationContainer>
-          <Stack.Navigator screenOptions={{headerShown: false}}>
-            <Stack.Screen name="Splash" component={Splash} />
-            <Stack.Screen name="Auth" component={Auth} />
-            <Stack.Screen
-              name="DrawerNavigation"
-              component={DrawerNavigation}
-            />
-          </Stack.Navigator>
-        </NavigationContainer>
-     
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{headerShown: false}}>
+          <Stack.Screen name="Splash" component={Splash} />
+
+          <Stack.Screen name="Auth" component={Auth} />
+          <Stack.Screen name="DrawerNavigation" component={DrawerNavigation} />
+        </Stack.Navigator>
+      </NavigationContainer>
     </Provider>
   );
 };

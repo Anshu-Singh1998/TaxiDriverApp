@@ -6,9 +6,10 @@ export const documentList = createAsyncThunk(
   async (_, {rejectWithValue}) => {
     try {
       const response = await Api.get('documents/fetch-all');
-      console.log('Wallet List Response >>>>>', response.data);
+      console.log('Document Response >>>>>', response.data);
       return response.data;
     } catch (error) {
+      console.error('API Error for documents all:', error.response?.data || error.message);
       return rejectWithValue(error.response?.data || error.message);
     }
   },
@@ -33,21 +34,12 @@ export const documentShow = createAsyncThunk(
 
 export const documentSave = createAsyncThunk(
   'document/documentSave',
-  async (
-    rc_book,
-    road_tax,
-    driving_licence,
-    permit,
-    drivers_batch,
-    {rejectWithValue},
-  ) => {
+  async (formData, {rejectWithValue}) => {
     try {
-      const response = await Api.post('documents/save', {
-        rc_book,
-        road_tax,
-        driving_licence,
-        permit,
-        drivers_batch,
+      const response = await Api.post('documents/save', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
       console.log('Documents Save Response >>>>>', response.data);
       return response.data;
@@ -56,6 +48,8 @@ export const documentSave = createAsyncThunk(
     }
   },
 );
+
+
 
 export const documentDownload = createAsyncThunk(
   'document/documentDownload',

@@ -32,7 +32,7 @@ const TermsAndConditions = () => {
       />
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Image source={Left} resizeMode="contain" style={styles.backIcon} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Terms And Conditions</Text>
